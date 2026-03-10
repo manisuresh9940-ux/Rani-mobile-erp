@@ -1,0 +1,34 @@
+# ── Rani Mobiles ERP — public/.htaccess ──────────────────────────────────────
+# Route every request that is NOT a real file or directory to index.php.
+# Requires: mod_rewrite enabled in Apache (a2enmod rewrite).
+
+Options -Indexes
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If the request maps to an existing file, serve it directly (e.g. CSS, JS, images).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Otherwise forward to the front controller.
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Block access to hidden files (e.g. .env, .git).
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Disable PHP error display in production via htaccess as a safety net.
+# The application itself controls this through config.php.
+<IfModule mod_php.c>
+    php_flag  display_errors  Off
+    php_value error_reporting  32767
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag  display_errors  Off
+    php_value error_reporting  32767
+</IfModule>

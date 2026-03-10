@@ -1,0 +1,2 @@
+# Placeholder — keeps the logs/ directory in version control.
+# Actual log files (*.log) are excluded via .gitignore.

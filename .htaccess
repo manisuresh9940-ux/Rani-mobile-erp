@@ -1,0 +1,22 @@
+# ── Rani Mobiles ERP — root .htaccess ────────────────────────────────────────
+# This file sits at the project root (above public/).
+# Its sole job is to deny direct HTTP access to every directory OTHER than
+# public/, preventing exposure of source code, config files and logs.
+#
+# NOTE: On a shared-hosting or VPS deployment the document root should be
+# pointed directly at the public/ subdirectory, making this file a belt-and-
+# suspenders precaution.  On some control panels (e.g. cPanel) you may need
+# to symlink or copy public/ content to public_html/ instead.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Redirect everything to public/index.php when the doc-root is the project root.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>
+
+# Deny direct access to sensitive directories.
+<FilesMatch "\.(env|log|sql|sh|bak|cfg|ini)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
