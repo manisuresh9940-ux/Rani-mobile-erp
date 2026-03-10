@@ -27,7 +27,7 @@ class HomeController extends BaseController
 
     public function about(): void
     {
-        $this->render('home/index', [
+        $this->render('home/about', [
             'title'   => APP_NAME . ' — About',
             'appName' => APP_NAME,
         ]);
