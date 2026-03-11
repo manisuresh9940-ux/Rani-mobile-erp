@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 -- Default admin: username=admin, password=Admin@1234
 INSERT INTO `users` (`branch_id`,`role_id`,`username`,`password`,`full_name`,`phone`,`email`) VALUES
-(1, 1, 'admin', '$2y$12$bkNv6ESNhp6CRVeAiXjXJ.S5lC9OqL0I8v2n5WJDTJ6m0JTBi01Oa', 'System Admin', '9999999999', 'admin@ranimobiles.in');
+(1, 1, 'admin', '$2y$12$XykbVfRmHZnIMvTP6XnCCOsozriSIMlGD65Y0iG07rNCnE4XYFEZ6', 'System Admin', '9999999999', 'admin@ranimobiles.in');
 
 -- -------------------------
 -- Table: activity_log
