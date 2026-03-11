@@ -1,0 +1,27 @@
+# Rani Mobiles ERP — .gitignore
+
+# Uploads (user media)
+/uploads/secondhand/
+
+# Backups directory
+/backups/
+
+# PHP dependencies
+/vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Log files
+*.log
+
+# Temp files
+/tmp/
