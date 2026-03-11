@@ -126,6 +126,9 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         <i class="bi bi-chevron-down ms-auto"></i>
       </div>
       <div class="collapse <?= $currentDir==='accounts'?'show':'' ?>" id="navAccounts">
+        <a href="<?= BASE_URL ?>/modules/accounts/customers.php" class="nav-sublink <?= $currentFile==='customers.php'?'active':'' ?>">
+          <i class="bi bi-people me-2"></i>Customers
+        </a>
         <a href="<?= BASE_URL ?>/modules/accounts/expenses.php" class="nav-sublink <?= $currentFile==='expenses.php'?'active':'' ?>">
           <i class="bi bi-receipt me-2"></i>Expenses
         </a>

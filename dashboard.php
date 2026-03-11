@@ -72,6 +72,55 @@ $q = $isAdmin
 $q->execute($isAdmin ? [] : [$branch_id]);
 $pendingPayments = (float)$q->fetchColumn();
 
+// Internal Branch Profit (from completed transfers where this branch is the sender)
+$q = $isAdmin
+   ? $pdo->prepare("SELECT COALESCE(SUM(profit),0) FROM branch_transfers WHERE status='received'")
+   : $pdo->prepare("SELECT COALESCE(SUM(profit),0) FROM branch_transfers WHERE from_branch_id=? AND status='received'");
+$q->execute($isAdmin ? [] : [$branch_id]);
+$internalProfit = (float)$q->fetchColumn();
+
+// ── Smart Business Insights ────────────────────────────────────
+// Top selling brand this month
+$monthStart = date('Y-m-01');
+$q = $pdo->prepare(
+    "SELECT br.name, COALESCE(SUM(si.qty),0) AS qty_sold
+     FROM sale_items si
+     JOIN sales s ON s.id=si.sale_id
+     JOIN products p ON p.id=si.product_id
+     JOIN brands br ON br.id=p.brand_id
+     WHERE s.sale_date >= ?
+     GROUP BY br.id ORDER BY qty_sold DESC LIMIT 1"
+);
+$q->execute([$monthStart]);
+$topBrand = $q->fetch();
+
+// Best performing branch this month (admin only)
+$topBranchInsight = null;
+if ($isAdmin) {
+    $q = $pdo->prepare(
+        "SELECT b.code, COALESCE(SUM(s.total),0) AS total
+         FROM branches b
+         LEFT JOIN sales s ON s.branch_id=b.id AND s.sale_date >= ?
+         GROUP BY b.id ORDER BY total DESC LIMIT 1"
+    );
+    $q->execute([$monthStart]);
+    $topBranchInsight = $q->fetch();
+}
+
+// Highest profit product this month
+$q = $pdo->prepare(
+    "SELECT p.name, br.name AS brand,
+            COALESCE(SUM(si.total - p.purchase_cost * si.qty),0) AS profit
+     FROM sale_items si
+     JOIN sales s ON s.id=si.sale_id
+     JOIN products p ON p.id=si.product_id
+     JOIN brands br ON br.id=p.brand_id
+     WHERE s.sale_date >= ?
+     GROUP BY p.id ORDER BY profit DESC LIMIT 1"
+);
+$q->execute([$monthStart]);
+$topProfitProduct = $q->fetch();
+
 // ── Charts data ────────────────────────────────────────────────
 // Last 7 days sales
 $days = []; $daySales = [];
@@ -176,46 +225,60 @@ $pageTitle = 'Dashboard';
 
 <!-- KPI Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-sales">
       <div class="kpi-icon"><i class="bi bi-bag-check"></i></div>
       <div class="kpi-value"><?= money($todaySales) ?></div>
       <div class="kpi-label">Today Sales</div>
     </div>
   </div>
-  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-purchase">
       <div class="kpi-icon"><i class="bi bi-truck"></i></div>
       <div class="kpi-value"><?= money($todayPurchase) ?></div>
       <div class="kpi-label">Today Purchase</div>
     </div>
   </div>
-  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-profit">
       <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
       <div class="kpi-value"><?= money($todayProfit) ?></div>
       <div class="kpi-label">Today Profit</div>
     </div>
   </div>
-  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-cash">
       <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
       <div class="kpi-value"><?= money($cashBalance) ?></div>
       <div class="kpi-label">Cash Balance</div>
     </div>
   </div>
-  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-stock">
       <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
       <div class="kpi-value"><?= money($stockValue) ?></div>
       <div class="kpi-label">Stock Value</div>
     </div>
   </div>
-  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-low">
       <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
       <div class="kpi-value"><?= $lowStockCount ?></div>
       <div class="kpi-label">Low Stock Items</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
+    <div class="kpi-card" style="background:linear-gradient(135deg,#e94560,#c0392b)">
+      <div class="kpi-icon"><i class="bi bi-clock-history"></i></div>
+      <div class="kpi-value" style="color:#fff"><?= money($pendingPayments) ?></div>
+      <div class="kpi-label" style="color:rgba(255,255,255,.8)">Pending Payments</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-xl-2 fade-in-up">
+    <div class="kpi-card" style="background:linear-gradient(135deg,#11998e,#38ef7d)">
+      <div class="kpi-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="kpi-value" style="color:#fff"><?= money($internalProfit) ?></div>
+      <div class="kpi-label" style="color:rgba(255,255,255,.8)">Internal Profit</div>
     </div>
   </div>
 </div>
@@ -310,6 +373,52 @@ $pageTitle = 'Dashboard';
           <?php endif; ?>
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- Smart Business Insights -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="chart-card">
+      <div class="chart-title"><i class="bi bi-lightbulb me-2 text-warning"></i>Smart Business Insights — This Month</div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-4">
+          <div class="p-3 rounded-3" style="background:#f0f9ff;border-left:4px solid #0f3460">
+            <div class="small text-muted mb-1"><i class="bi bi-award me-1"></i>Top Selling Brand</div>
+            <?php if ($topBrand): ?>
+              <div class="fw-bold fs-5"><?= clean($topBrand['name']) ?></div>
+              <div class="text-success small"><?= number_format((int)$topBrand['qty_sold']) ?> units sold this month</div>
+            <?php else: ?>
+              <div class="text-muted small">No sales data yet</div>
+            <?php endif; ?>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 rounded-3" style="background:#f0fff4;border-left:4px solid #28a745">
+            <div class="small text-muted mb-1"><i class="bi bi-shop me-1"></i>Best Performing Branch</div>
+            <?php if ($topBranchInsight): ?>
+              <div class="fw-bold fs-5"><?= clean($topBranchInsight['code']) ?></div>
+              <div class="text-success small"><?= money((float)$topBranchInsight['total']) ?> sales this month</div>
+            <?php elseif (!$isAdmin): ?>
+              <div class="text-muted small">Admin view required</div>
+            <?php else: ?>
+              <div class="text-muted small">No sales data yet</div>
+            <?php endif; ?>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-3 rounded-3" style="background:#fffbf0;border-left:4px solid #ffc107">
+            <div class="small text-muted mb-1"><i class="bi bi-trophy me-1"></i>Highest Profit Product</div>
+            <?php if ($topProfitProduct): ?>
+              <div class="fw-bold"><?= clean($topProfitProduct['brand']) ?> <?= clean($topProfitProduct['name']) ?></div>
+              <div class="text-success small"><?= money((float)$topProfitProduct['profit']) ?> profit this month</div>
+            <?php else: ?>
+              <div class="text-muted small">No sales data yet</div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

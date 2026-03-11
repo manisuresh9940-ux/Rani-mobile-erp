@@ -84,6 +84,34 @@ $topBrands->execute($params);
 $topBrands = $topBrands->fetchAll();
 
 $branches = $pdo->query('SELECT id, code FROM branches ORDER BY code')->fetchAll();
+
+// ── CSV Export ────────────────────────────────────────────────
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    $allSales = $pdo->prepare(
+        'SELECT s.invoice_no, b.code AS branch, s.sale_date, s.customer_name, s.customer_phone,
+                s.subtotal, s.gst_amount, s.total, s.paid_cash, s.paid_upi, s.paid_card, s.paid_credit
+         FROM sales s JOIN branches b ON b.id=s.branch_id
+         WHERE ' . implode(' AND ', $where) . ' ORDER BY s.sale_date, s.id'
+    );
+    $allSales->execute($params);
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="sales_report_' . $fromDate . '_to_' . $toDate . '.csv"');
+    $out = fopen('php://output', 'w');
+    fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+    fputcsv($out, ['Invoice No', 'Branch', 'Date', 'Customer', 'Phone', 'Subtotal', 'GST', 'Total', 'Cash', 'UPI', 'Card', 'Credit']);
+    foreach ($allSales as $s) {
+        fputcsv($out, [
+            $s['invoice_no'], $s['branch'], $s['sale_date'],
+            $s['customer_name'] ?: 'Walk-in', $s['customer_phone'] ?? '',
+            $s['subtotal'], $s['gst_amount'], $s['total'],
+            $s['paid_cash'], $s['paid_upi'], $s['paid_card'], $s['paid_credit'],
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Sales Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -91,9 +119,14 @@ $pageTitle = 'Sales Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-graph-up me-2"></i>Sales Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer me-1"></i>Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <a href="?<?= http_build_query(array_merge($_GET, ['export'=>'csv'])) ?>" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+    </a>
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer me-1"></i>Print
+    </button>
+  </div>
 </div>
 
 <!-- Filters -->

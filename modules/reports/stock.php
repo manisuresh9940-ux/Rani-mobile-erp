@@ -38,6 +38,28 @@ $totalSellVal = array_sum(array_column($stocks, 'sell_value'));
 $totalItems   = count($stocks);
 
 $branches = $pdo->query('SELECT id, code FROM branches ORDER BY code')->fetchAll();
+
+// ── CSV Export ────────────────────────────────────────────────
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="stock_report_' . date('Ymd') . '.csv"');
+    $out = fopen('php://output', 'w');
+    fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+    fputcsv($out, ['Brand', 'Product', 'Model', 'Category', 'Qty', 'Min Stock', 'Status', 'Cost Price', 'Sale Price', 'Cost Value', 'Retail Value']);
+    foreach ($stocks as $s) {
+        if ($s['total_qty'] <= 0) { $status = 'Out of Stock'; }
+        elseif ($s['total_qty'] <= $s['min_stock']) { $status = 'Low Stock'; }
+        else { $status = 'OK'; }
+        fputcsv($out, [
+            $s['brand'], $s['name'], $s['model'] ?? '', $s['category'] ?? '',
+            $s['total_qty'], $s['min_stock'], $status,
+            $s['purchase_cost'], $s['sale_price'], $s['cost_value'], $s['sell_value'],
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Stock Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -45,9 +67,14 @@ $pageTitle = 'Stock Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-boxes me-2"></i>Stock Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer"></i> Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <a href="?<?= http_build_query(array_merge($_GET, ['export'=>'csv'])) ?>" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+    </a>
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer"></i> Print
+    </button>
+  </div>
 </div>
 
 <div class="erp-form-card mb-3 no-print">

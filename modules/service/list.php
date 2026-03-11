@@ -115,7 +115,10 @@ $pageTitle = 'Job Cards';
                 <?php endif; ?>
               </td>
               <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="updateStatus(<?= (int)$j['id'] ?>, '<?= htmlspecialchars($j['status'], ENT_QUOTES, 'UTF-8') ?>', <?= (int)($j['rating'] ?? 0) ?>)">
+                <button class="btn btn-sm btn-outline-primary js-update-status"
+                        data-id="<?= (int)$j['id'] ?>"
+                        data-status="<?= htmlspecialchars($j['status'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-rating="<?= (int)($j['rating'] ?? 0) ?>">
                   <i class="bi bi-pencil"></i>
                 </button>
               </td>
@@ -195,12 +198,23 @@ function toggleRatingSection(status, score) {
   }
 }
 
-function updateStatus(id, currentStatus, currentRating) {
+function openStatusModal(id, currentStatus, currentRating) {
   document.getElementById('modalJobId').value  = id;
   document.getElementById('modalStatus').value = currentStatus;
   toggleRatingSection(currentStatus, currentRating);
   new bootstrap.Modal(document.getElementById('statusModal')).show();
 }
+
+/* Attach click handler via event delegation to avoid inline onclick */
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.js-update-status');
+  if (!btn) return;
+  openStatusModal(
+    parseInt(btn.dataset.id, 10),
+    btn.dataset.status,
+    parseInt(btn.dataset.rating, 10) || 0
+  );
+});
 
 /* Show/hide rating section when status changes inside the modal */
 document.getElementById('modalStatus').addEventListener('change', function () {

@@ -44,6 +44,26 @@ $sales = $pdo->prepare(
 $sales->execute($params);
 $sales = $sales->fetchAll();
 
+// ── CSV Export ────────────────────────────────────────────────
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="sales_' . $fromDate . '_to_' . $toDate . '.csv"');
+    $out = fopen('php://output', 'w');
+    fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM for Excel
+    fputcsv($out, ['Invoice No', 'Branch', 'Date', 'Customer', 'Phone', 'Subtotal', 'GST', 'Total', 'Cash', 'UPI', 'Card', 'Credit', 'Type']);
+    foreach ($sales as $s) {
+        fputcsv($out, [
+            $s['invoice_no'], $s['branch_code'], $s['sale_date'],
+            $s['customer_name'] ?: 'Walk-in', $s['customer_phone'] ?? '',
+            $s['subtotal'], $s['gst_amount'], $s['total'],
+            $s['paid_cash'], $s['paid_upi'], $s['paid_card'], $s['paid_credit'],
+            $s['is_gst_invoice'] ? 'GST' : 'Non-GST',
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 // Totals
 $totalSale   = array_sum(array_column($sales, 'total'));
 $totalCash   = array_sum(array_column($sales, 'paid_cash'));
@@ -63,9 +83,14 @@ $pageTitle = 'Sales List';
     <h1 class="page-title"><i class="bi bi-receipt me-2"></i>Sales List</h1>
     <p class="page-subtitle"><?= count($sales) ?> records found</p>
   </div>
-  <a href="<?= BASE_URL ?>/modules/sales/pos.php" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-circle me-1"></i>New Sale
-  </a>
+  <div class="d-flex gap-2">
+    <a href="?<?= http_build_query(array_merge($_GET, ['export'=>'csv'])) ?>" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+    </a>
+    <a href="<?= BASE_URL ?>/modules/sales/pos.php" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>New Sale
+    </a>
+  </div>
 </div>
 
 <!-- Filters -->
