@@ -81,11 +81,11 @@ $pageTitle = 'Job Cards';
     <table class="table table-hover mb-0">
       <thead>
         <tr><th>#</th><th>Job No</th><th>Customer</th><th>Device</th><th>IMEI</th>
-            <th>Technician</th><th class="text-end">Cost</th><th>Status</th><th>Received</th><th>Actions</th></tr>
+            <th>Technician</th><th class="text-end">Cost</th><th>Status</th><th>Rating</th><th>Received</th><th>Actions</th></tr>
       </thead>
       <tbody>
         <?php if (empty($jobs)): ?>
-          <tr><td colspan="10" class="text-center text-muted py-4">No job cards found</td></tr>
+          <tr><td colspan="11" class="text-center text-muted py-4">No job cards found</td></tr>
         <?php else: ?>
           <?php foreach ($jobs as $i => $j): ?>
             <tr>
@@ -106,7 +106,16 @@ $pageTitle = 'Job Cards';
               </td>
               <td><?= date('d-m-Y', strtotime($j['received_at'])) ?></td>
               <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="updateStatus(<?= $j['id'] ?>, '<?= $j['status'] ?>')">
+                <?php if (!empty($j['rating'])): ?>
+                  <span class="text-warning" title="<?= (int)$j['rating'] ?>/5 stars">
+                    <?= str_repeat('★', (int)$j['rating']) ?><?= str_repeat('☆', 5 - (int)$j['rating']) ?>
+                  </span>
+                <?php else: ?>
+                  <span class="text-muted small">—</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="updateStatus(<?= (int)$j['id'] ?>, '<?= htmlspecialchars($j['status'], ENT_QUOTES, 'UTF-8') ?>', <?= (int)($j['rating'] ?? 0) ?>)">
                   <i class="bi bi-pencil"></i>
                 </button>
               </td>
@@ -125,6 +134,7 @@ $pageTitle = 'Job Cards';
       <form method="POST" action="<?= BASE_URL ?>/api/update_job_status.php">
         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="job_id" id="modalJobId">
+        <input type="hidden" name="rating" id="modalRatingValue" value="0">
         <div class="modal-header">
           <h5 class="modal-title">Update Job Status</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -142,6 +152,11 @@ $pageTitle = 'Job Cards';
             <label class="form-label">Notes</label>
             <textarea name="notes" class="form-control" rows="2"></textarea>
           </div>
+          <!-- Customer satisfaction rating (shown only when Delivered) -->
+          <div id="ratingSection" class="mt-3" style="display:none">
+            <label class="form-label fw-semibold">Customer Satisfaction</label>
+            <div id="ratingWidget"></div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -153,11 +168,44 @@ $pageTitle = 'Job Cards';
 </div>
 
 <script>
-function updateStatus(id, currentStatus) {
-  document.getElementById('modalJobId').value = id;
+/* ─── Raty star-image base path (CDN) ─────────────────────── */
+const RATY_IMG = 'https://cdn.jsdelivr.net/npm/jquery.raty@2.9.0/lib/images/';
+
+function initRaty(score) {
+  if (typeof $.fn.raty === 'undefined') return;
+  $('#ratingWidget').raty({
+    path:    RATY_IMG,
+    score:   score || 0,
+    number:  5,
+    hints:   ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'],
+    click: function(s) {
+      document.getElementById('modalRatingValue').value = s;
+    }
+  });
+  document.getElementById('modalRatingValue').value = score || 0;
+}
+
+function toggleRatingSection(status, score) {
+  const ratingSection = document.getElementById('ratingSection');
+  if (status === 'delivered') {
+    ratingSection.style.display = 'block';
+    initRaty(score || 0);
+  } else {
+    ratingSection.style.display = 'none';
+  }
+}
+
+function updateStatus(id, currentStatus, currentRating) {
+  document.getElementById('modalJobId').value  = id;
   document.getElementById('modalStatus').value = currentStatus;
+  toggleRatingSection(currentStatus, currentRating);
   new bootstrap.Modal(document.getElementById('statusModal')).show();
 }
+
+/* Show/hide rating section when status changes inside the modal */
+document.getElementById('modalStatus').addEventListener('change', function () {
+  toggleRatingSection(this.value, parseInt(document.getElementById('modalRatingValue').value) || 0);
+});
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

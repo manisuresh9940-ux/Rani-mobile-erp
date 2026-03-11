@@ -426,6 +426,7 @@ CREATE TABLE IF NOT EXISTS `service_jobs` (
   `status`         ENUM('received','diagnosed','in_repair','ready','delivered') DEFAULT 'received',
   `received_at`    DATETIME DEFAULT CURRENT_TIMESTAMP,
   `delivered_at`   DATETIME,
+  `rating`         TINYINT UNSIGNED DEFAULT NULL COMMENT '1–5 customer satisfaction (jQuery Raty)',
   `created_by`     INT UNSIGNED,
   FOREIGN KEY (`branch_id`)    REFERENCES `branches`(`id`),
   FOREIGN KEY (`brand_id`)     REFERENCES `brands`(`id`) ON DELETE SET NULL,
