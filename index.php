@@ -164,6 +164,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </button>
   </form>
   <p class="mt-3 text-white-50 small">Default: admin / Admin@1234</p>
+  <hr style="border-color:rgba(255,255,255,0.1)">
+  <p class="text-white-50 small mb-0">
+    New staff member?
+    <a href="<?= BASE_URL ?>/register.php" style="color:#e94560;text-decoration:none">Register here</a>
+  </p>
 </div>
 <script>
 function togglePwd() {

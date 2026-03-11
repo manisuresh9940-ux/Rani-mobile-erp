@@ -14,7 +14,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'save') {
+    if ($action === 'approve') {
+        $id   = (int)$_POST['id'];
+        $stmt = $pdo->prepare('UPDATE users SET is_active=1 WHERE id=? AND is_active=0');
+        $stmt->execute([$id]);
+        $message = $stmt->rowCount() ? 'User account approved and activated.' : 'User not found or already active.';
+    } elseif ($action === 'reject') {
+        $id = (int)$_POST['id'];
+        $pdo->prepare('DELETE FROM users WHERE id=? AND is_active=0')->execute([$id]);
+        $message = 'Registration request rejected and removed.';
+    } elseif ($action === 'save') {
         $id         = (int)($_POST['id'] ?? 0);
         $full_name  = clean($_POST['full_name'] ?? '');
         $username   = clean($_POST['username'] ?? '');
@@ -74,10 +83,17 @@ if (isset($_GET['edit'])) {
     $editUser = $stmt->fetch();
 }
 
-$users    = $pdo->query(
+$users = $pdo->query(
     'SELECT u.*, b.code AS branch_code, r.name AS role_name
      FROM users u JOIN branches b ON b.id=u.branch_id JOIN roles r ON r.id=u.role_id
      ORDER BY b.code, u.full_name'
+)->fetchAll();
+
+$pendingUsers = $pdo->query(
+    'SELECT u.*, b.code AS branch_code, r.name AS role_name
+     FROM users u JOIN branches b ON b.id=u.branch_id JOIN roles r ON r.id=u.role_id
+     WHERE u.is_active=0
+     ORDER BY u.created_at DESC'
 )->fetchAll();
 
 $branches = $pdo->query('SELECT id, code, name FROM branches ORDER BY code')->fetchAll();
@@ -181,6 +197,59 @@ $pageTitle = 'Staff / Users';
     </form>
   </div>
 </div>
+
+<?php if (!empty($pendingUsers)): ?>
+<div class="erp-form-card mb-3" style="border-left: 4px solid #ffc107;">
+  <div class="card-heading" style="color:#ffc107;">
+    <i class="bi bi-person-exclamation me-1"></i>
+    Pending Registration Approvals
+    <span class="badge bg-warning text-dark ms-2"><?= count($pendingUsers) ?></span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead>
+        <tr>
+          <th>Name</th><th>Username</th><th>Branch</th><th>Role</th>
+          <th>Phone</th><th>Email</th><th>Registered</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($pendingUsers as $pu): ?>
+          <tr>
+            <td><?= clean($pu['full_name']) ?></td>
+            <td><code><?= clean($pu['username']) ?></code></td>
+            <td><span class="badge bg-primary"><?= clean($pu['branch_code']) ?></span></td>
+            <td><span class="badge bg-secondary"><?= clean($pu['role_name']) ?></span></td>
+            <td><?= clean($pu['phone'] ?? '-') ?></td>
+            <td><?= clean($pu['email'] ?? '-') ?></td>
+            <td><?= clean($pu['created_at'] ?? '-') ?></td>
+            <td>
+              <form method="POST" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="action" value="approve">
+                <input type="hidden" name="id" value="<?= $pu['id'] ?>">
+                <button type="submit" class="btn btn-sm btn-success"
+                        title="Approve" onclick="return confirm('Approve this registration?')">
+                  <i class="bi bi-check-circle me-1"></i>Approve
+                </button>
+              </form>
+              <form method="POST" class="d-inline ms-1">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="action" value="reject">
+                <input type="hidden" name="id" value="<?= $pu['id'] ?>">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        title="Reject" onclick="return confirm('Reject and delete this registration request?')">
+                  <i class="bi bi-x-circle me-1"></i>Reject
+                </button>
+              </form>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php endif; ?>
 
 <div class="erp-table">
   <div class="table-responsive">

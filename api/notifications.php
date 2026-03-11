@@ -79,4 +79,12 @@ if ($deadCount > 0) {
     $items[] = ['title' => '📦 Dead Stock', 'message' => "Some products have no sales in 45+ days."];
 }
 
+// Pending user registrations (Admin only)
+if ($isAdmin) {
+    $pendingReg = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE is_active=0")->fetchColumn();
+    if ($pendingReg > 0) {
+        $items[] = ['title' => '👤 Pending Registrations', 'message' => "$pendingReg staff registration(s) awaiting approval."];
+    }
+}
+
 echo json_encode(['items' => $items]);
