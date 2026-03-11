@@ -46,9 +46,15 @@ $pageTitle = 'Purchase Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-graph-down me-2"></i>Purchase Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer"></i> Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <a href="<?= BASE_URL ?>/api/export_report.php?type=purchase&from=<?= urlencode($fromDate) ?>&to=<?= urlencode($toDate) ?><?= $fBranch?"&branch=$fBranch":'' ?>"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer"></i> Print
+    </button>
+  </div>
 </div>
 
 <div class="erp-form-card mb-3 no-print">

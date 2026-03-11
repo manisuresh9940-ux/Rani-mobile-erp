@@ -26,12 +26,15 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         <i class="bi bi-cart3 me-2"></i>🛒 Sales
         <i class="bi bi-chevron-down ms-auto"></i>
       </div>
-      <div class="collapse <?= in_array($currentDir,['sales'])?'show':'' ?>" id="navSales">
+      <div class="collapse <?= in_array($currentDir,['sales','customers'])?'show':'' ?>" id="navSales">
         <a href="<?= BASE_URL ?>/modules/sales/pos.php" class="nav-sublink <?= $currentFile==='pos.php'?'active':'' ?>">
           <i class="bi bi-bag-plus me-2"></i>POS / New Sale
         </a>
         <a href="<?= BASE_URL ?>/modules/sales/list.php" class="nav-sublink <?= $currentFile==='list.php'&&$currentDir==='sales'?'active':'' ?>">
           <i class="bi bi-list-ul me-2"></i>Sales List
+        </a>
+        <a href="<?= BASE_URL ?>/modules/customers/list.php" class="nav-sublink <?= $currentDir==='customers'?'active':'' ?>">
+          <i class="bi bi-people me-2"></i>Customers
         </a>
       </div>
     </div>
@@ -178,6 +181,9 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         </a>
         <a href="<?= BASE_URL ?>/modules/settings/users.php" class="nav-sublink <?= $currentFile==='users.php'?'active':'' ?>">
           <i class="bi bi-people me-2"></i>Staff / Users
+        </a>
+        <a href="<?= BASE_URL ?>/modules/settings/attendance.php" class="nav-sublink <?= $currentFile==='attendance.php'?'active':'' ?>">
+          <i class="bi bi-geo-alt me-2"></i>GPS Attendance
         </a>
         <a href="<?= BASE_URL ?>/modules/settings/general.php" class="nav-sublink <?= $currentFile==='general.php'?'active':'' ?>">
           <i class="bi bi-sliders me-2"></i>General

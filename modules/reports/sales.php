@@ -91,9 +91,15 @@ $pageTitle = 'Sales Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-graph-up me-2"></i>Sales Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer me-1"></i>Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <a href="<?= BASE_URL ?>/api/export_report.php?type=sales&from=<?= urlencode($fromDate) ?>&to=<?= urlencode($toDate) ?><?= $fBranch?"&branch=$fBranch":'' ?>"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer me-1"></i>Print
+    </button>
+  </div>
 </div>
 
 <!-- Filters -->

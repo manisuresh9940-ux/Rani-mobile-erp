@@ -79,4 +79,60 @@ if ($deadCount > 0) {
     $items[] = ['title' => '📦 Dead Stock', 'message' => "Some products have no sales in 45+ days."];
 }
 
+// ── Data Integrity Checks ──────────────────────────────────────
+
+// Negative stock (should not happen)
+$q = $isAdmin
+   ? $pdo->prepare("SELECT COUNT(*) FROM stock WHERE qty < 0")
+   : $pdo->prepare("SELECT COUNT(*) FROM stock WHERE branch_id=? AND qty < 0");
+$q->execute($isAdmin ? [] : [$branch_id]);
+$negStock = (int)$q->fetchColumn();
+if ($negStock > 0) {
+    $items[] = ['title' => '🚨 Negative Stock', 'message' => "$negStock product(s) have negative stock. Immediate review required."];
+}
+
+// Duplicate IMEI in stock (same IMEI assigned to more than one in-stock record)
+$dupImei = (int)$pdo->query(
+    "SELECT COUNT(*) FROM (
+         SELECT imei, COUNT(*) AS cnt FROM imei_numbers
+         WHERE status='in_stock' AND imei IS NOT NULL AND imei != ''
+         GROUP BY imei HAVING cnt > 1
+     ) AS dup"
+)->fetchColumn();
+if ($dupImei > 0) {
+    $items[] = ['title' => '⚠️ Duplicate IMEI', 'message' => "$dupImei duplicate IMEI number(s) detected in stock."];
+}
+
+// Sales payment mismatch (paid < total with no credit recorded)
+$q = $isAdmin
+   ? $pdo->prepare(
+       "SELECT COUNT(*) FROM sales
+        WHERE (paid_cash + paid_upi + paid_card + paid_credit) < total - 0.01
+          AND paid_credit = 0")
+   : $pdo->prepare(
+       "SELECT COUNT(*) FROM sales
+        WHERE branch_id=?
+          AND (paid_cash + paid_upi + paid_card + paid_credit) < total - 0.01
+          AND paid_credit = 0");
+$q->execute($isAdmin ? [] : [$branch_id]);
+$payMismatch = (int)$q->fetchColumn();
+if ($payMismatch > 0) {
+    $items[] = ['title' => '💰 Payment Mismatch', 'message' => "$payMismatch sale(s) have unpaid balance without credit entry."];
+}
+
+// Pending transfer (sent but not received > 7 days)
+$q = $isAdmin
+   ? $pdo->prepare(
+       "SELECT COUNT(*) FROM branch_transfers
+        WHERE status='pending' AND DATEDIFF(CURDATE(), transfer_date) > 7")
+   : $pdo->prepare(
+       "SELECT COUNT(*) FROM branch_transfers
+        WHERE (from_branch_id=? OR to_branch_id=?) AND status='pending'
+          AND DATEDIFF(CURDATE(), transfer_date) > 7");
+$q->execute($isAdmin ? [] : [$branch_id, $branch_id]);
+$pendingTrf = (int)$q->fetchColumn();
+if ($pendingTrf > 0) {
+    $items[] = ['title' => '🔄 Pending Transfer', 'message' => "$pendingTrf branch transfer(s) are pending receipt for over 7 days."];
+}
+
 echo json_encode(['items' => $items]);

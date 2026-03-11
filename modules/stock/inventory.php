@@ -71,9 +71,19 @@ $pageTitle = 'Inventory';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-boxes me-2"></i>Inventory</h1>
-  <a href="<?= BASE_URL ?>/modules/stock/products.php" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-phone me-1"></i>Products
-  </a>
+  <div class="d-flex gap-2">
+    <a href="<?= BASE_URL ?>/api/export_report.php?type=stock<?= $fBranch?"&branch=$fBranch":'' ?>"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+    <a href="<?= BASE_URL ?>/api/export_report.php?type=imei<?= $fBranch?"&branch=$fBranch":'' ?>"
+       class="btn btn-outline-info btn-sm">
+      <i class="bi bi-upc me-1"></i>IMEI List
+    </a>
+    <a href="<?= BASE_URL ?>/modules/stock/products.php" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-phone me-1"></i>Products
+    </a>
+  </div>
 </div>
 
 <!-- Summary cards -->
