@@ -86,19 +86,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_purchase'])) {
                 // Update purchase cost in product
                 $pdo->prepare('UPDATE products SET purchase_cost=? WHERE id=?')->execute([$cost, $prod_id]);
 
-                // IMEI numbers
+                // IMEI numbers - with duplicate detection
                 $imeisRaw = trim($item['imeis'] ?? '');
                 if ($imeisRaw) {
+                    $duplicateImeis = [];
                     foreach (preg_split('/[\s,\n]+/', $imeisRaw) as $imei) {
                         $imei = trim($imei);
-                        if ($imei) {
-                            try {
-                                $pdo->prepare(
-                                    'INSERT IGNORE INTO imei_numbers (product_id,branch_id,imei,purchase_id)
-                                     VALUES (?,?,?,?)'
-                                )->execute([$prod_id, $branch_id, $imei, $pur_id]);
-                            } catch (Throwable) {}
+                        if (!$imei) continue;
+                        // Check for duplicate IMEI
+                        $imeiCheckStmt = $pdo->prepare('SELECT id, status FROM imei_numbers WHERE imei=?');
+                        $imeiCheckStmt->execute([$imei]);
+                        $existing = $imeiCheckStmt->fetch();
+                        if ($existing) {
+                            $duplicateImeis[] = $imei . ' (status: ' . $existing['status'] . ')';
+                            continue;
                         }
+                        $pdo->prepare(
+                            'INSERT INTO imei_numbers (product_id,branch_id,imei,purchase_id)
+                             VALUES (?,?,?,?)'
+                        )->execute([$prod_id, $branch_id, $imei, $pur_id]);
+                    }
+                    if ($duplicateImeis) {
+                        throw new RuntimeException(
+                            'Duplicate IMEI(s) detected — already in system: ' . implode(', ', $duplicateImeis)
+                        );
                     }
                 }
             }

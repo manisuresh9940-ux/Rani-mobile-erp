@@ -58,6 +58,22 @@ foreach ($branches as $b) {
     ];
 }
 
+// CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="branch_report_' . $fromDate . '_to_' . $toDate . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Branch','Sales','Purchase','Expenses','Gross Profit','Stock Value']);
+    foreach ($branchData as $d) {
+        fputcsv($out, [
+            $d['code'] . ' - ' . $d['name'],
+            $d['sales'], $d['purchase'], $d['expenses'], $d['profit'], $d['stock_value']
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Branch Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -65,9 +81,15 @@ $pageTitle = 'Branch Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-shop me-2"></i>Branch Performance Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer"></i> Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer"></i> Print / PDF
+    </button>
+    <a href="?from=<?= urlencode($fromDate) ?>&to=<?= urlencode($toDate) ?>&export=csv"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export CSV
+    </a>
+  </div>
 </div>
 
 <div class="erp-form-card mb-3 no-print">
@@ -92,13 +114,13 @@ $pageTitle = 'Branch Report';
   <div class="col-lg-6">
     <div class="chart-card">
       <div class="chart-title">Branch Sales Comparison</div>
-      <div id="branchSalesChart"></div>
+      <canvas id="branchSalesChart" height="120"></canvas>
     </div>
   </div>
   <div class="col-lg-6">
     <div class="chart-card">
       <div class="chart-title">Branch Profit Comparison</div>
-      <div id="branchProfitChart"></div>
+      <canvas id="branchProfitChart" height="120"></canvas>
     </div>
   </div>
 </div>
@@ -162,24 +184,44 @@ $pageTitle = 'Branch Report';
   const sales   = <?= json_encode(array_column($branchData, 'sales')) ?>;
   const profits = <?= json_encode(array_column($branchData, 'profit')) ?>;
 
-  const common = {
-    chart:  { type: 'bar', height: 220, toolbar: { show: false } },
-    xaxis:  { categories: codes },
-    dataLabels: { enabled: false },
-    tooltip: { y: { formatter: v => '₹' + parseFloat(v).toLocaleString('en-IN') } }
+  const salesCtx  = document.getElementById('branchSalesChart').getContext('2d');
+  const profitCtx = document.getElementById('branchProfitChart').getContext('2d');
+
+  const chartDefaults = {
+    type: 'bar',
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } },
+        x: { grid: { display: false } }
+      }
+    }
   };
 
-  new ApexCharts(document.getElementById('branchSalesChart'), {
-    ...common,
-    series: [{ name: 'Sales', data: sales.map(v => parseFloat(v)) }],
-    colors: ['#0f3460']
-  }).render();
+  new Chart(salesCtx, {
+    ...chartDefaults,
+    data: {
+      labels: codes,
+      datasets: [{ label: 'Sales', data: sales.map(v => parseFloat(v)), backgroundColor: '#0f3460', borderRadius: 4 }]
+    }
+  });
 
-  new ApexCharts(document.getElementById('branchProfitChart'), {
-    ...common,
-    series: [{ name: 'Profit', data: profits.map(v => parseFloat(v)) }],
-    colors: profits.map(v => v >= 0 ? '#28a745' : '#dc3545')
-  }).render();
+  new Chart(profitCtx, {
+    ...chartDefaults,
+    data: {
+      labels: codes,
+      datasets: [{
+        label: 'Profit',
+        data: profits.map(v => parseFloat(v)),
+        backgroundColor: profits.map(v => parseFloat(v) >= 0 ? '#28a745' : '#dc3545'),
+        borderRadius: 4
+      }]
+    }
+  });
 })();
 </script>
 

@@ -84,6 +84,37 @@ $topBrands->execute($params);
 $topBrands = $topBrands->fetchAll();
 
 $branches = $pdo->query('SELECT id, code FROM branches ORDER BY code')->fetchAll();
+
+// CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    // Full sales rows for CSV
+    $expWhere  = $where;
+    $expParams = $params;
+    $exportRows = $pdo->prepare(
+        'SELECT s.invoice_no, s.sale_date, b.code AS branch,
+                s.customer_name, s.total, s.paid_cash, s.paid_upi, s.paid_card, s.paid_credit,
+                s.gst_amount, s.notes
+         FROM sales s JOIN branches b ON b.id=s.branch_id
+         WHERE ' . implode(' AND ', $expWhere) . ' ORDER BY s.sale_date DESC'
+    );
+    $exportRows->execute($expParams);
+    $rows = $exportRows->fetchAll();
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="sales_report_' . $fromDate . '_to_' . $toDate . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Invoice No','Date','Branch','Customer','Total','Cash','UPI','Card','Credit','GST','Notes']);
+    foreach ($rows as $r) {
+        fputcsv($out, [
+            $r['invoice_no'], $r['sale_date'], $r['branch'], $r['customer_name'] ?: 'Walk-in',
+            $r['total'], $r['paid_cash'], $r['paid_upi'], $r['paid_card'], $r['paid_credit'],
+            $r['gst_amount'], $r['notes']
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Sales Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -91,9 +122,15 @@ $pageTitle = 'Sales Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-graph-up me-2"></i>Sales Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer me-1"></i>Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer me-1"></i>Print / PDF
+    </button>
+    <a href="?from=<?= urlencode($fromDate) ?>&to=<?= urlencode($toDate) ?>&branch=<?= $fBranch ?>&export=csv"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export CSV
+    </a>
+  </div>
 </div>
 
 <!-- Filters -->
@@ -176,14 +213,14 @@ $pageTitle = 'Sales Report';
   <div class="col-lg-8">
     <div class="chart-card">
       <div class="chart-title">Daily Sales Trend</div>
-      <div id="salesTrendChart"></div>
+      <canvas id="salesTrendChart" height="100"></canvas>
     </div>
   </div>
   <!-- Top brands pie -->
   <div class="col-lg-4">
     <div class="chart-card">
       <div class="chart-title">Top Brands (Revenue)</div>
-      <div id="brandChart"></div>
+      <canvas id="brandChart" height="140"></canvas>
     </div>
   </div>
 </div>
@@ -224,24 +261,52 @@ $pageTitle = 'Sales Report';
   const labels = <?= json_encode(array_column($chartData, 'label')) ?>;
   const values = <?= json_encode(array_column($chartData, 'value')) ?>;
 
-  new ApexCharts(document.getElementById('salesTrendChart'), {
-    chart:  { type: 'bar', height: 250, toolbar: { show: false } },
-    series: [{ name: 'Sales', data: values.map(v => parseFloat(v)) }],
-    xaxis:  { categories: labels.map(d => new Date(d).toLocaleDateString('en-IN', {day:'2-digit',month:'short'})) },
-    yaxis:  { labels: { formatter: v => '₹' + v.toLocaleString('en-IN') } },
-    colors: ['#0f3460'],
-    dataLabels: { enabled: false },
-    tooltip:    { y: { formatter: v => '₹' + v.toLocaleString('en-IN') } }
-  }).render();
+  const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+  new Chart(salesCtx, {
+    type: 'bar',
+    data: {
+      labels: labels.map(d => new Date(d).toLocaleDateString('en-IN', {day:'2-digit', month:'short'})),
+      datasets: [{
+        label: 'Sales (₹)',
+        data: values.map(v => parseFloat(v)),
+        backgroundColor: 'rgba(15,52,96,0.75)',
+        borderColor: '#0f3460',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
 
   <?php if (!empty($topBrands)): ?>
-  new ApexCharts(document.getElementById('brandChart'), {
-    chart:  { type: 'pie', height: 250, toolbar: { show: false } },
-    series: <?= json_encode(array_column($topBrands, 'revenue')) ?>,
-    labels: <?= json_encode(array_column($topBrands, 'name')) ?>,
-    legend: { position: 'bottom', fontSize: '12px' },
-    tooltip: { y: { formatter: v => '₹' + parseFloat(v).toLocaleString('en-IN') } }
-  }).render();
+  const brandCtx = document.getElementById('brandChart').getContext('2d');
+  new Chart(brandCtx, {
+    type: 'pie',
+    data: {
+      labels: <?= json_encode(array_column($topBrands, 'name')) ?>,
+      datasets: [{
+        data: <?= json_encode(array_column($topBrands, 'revenue')) ?>,
+        backgroundColor: ['#0f3460','#e94560','#28a745','#ffc107','#17a2b8','#6f42c1','#fd7e14','#20c997','#dc3545','#6c757d']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': ₹' + parseFloat(ctx.parsed).toLocaleString('en-IN') } }
+      }
+    }
+  });
   <?php endif; ?>
 })();
 </script>

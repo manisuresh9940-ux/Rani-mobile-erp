@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS `roles` (
   `name`  VARCHAR(50) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
-INSERT INTO `roles` (`name`) VALUES ('Admin'),('Manager'),('Cashier'),('Technician');
+INSERT INTO `roles` (`name`) VALUES ('Admin'),('Manager'),('Cashier'),('Technician'),('Supervisor'),('Staff')
+ON DUPLICATE KEY UPDATE `name`=`name`;
 
 -- -------------------------
 -- Table: users
@@ -528,5 +529,36 @@ INSERT INTO `system_settings` (`key_name`,`key_value`) VALUES
 ('backup_schedule','daily'),
 ('login_start_time','09:00'),
 ('login_end_time','21:00');
+
+-- -------------------------
+-- Table: cashbook
+-- (Full transaction ledger for daily cash tracking)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS `cashbook` (
+  `id`           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `branch_id`    INT UNSIGNED NOT NULL,
+  `txn_date`     DATE NOT NULL,
+  `txn_type`     ENUM('in','out') NOT NULL DEFAULT 'in',
+  `category`     VARCHAR(50),
+  `description`  VARCHAR(255),
+  `amount`       DECIMAL(12,2) NOT NULL,
+  `ref_no`       VARCHAR(50),
+  `created_by`   INT UNSIGNED,
+  `created_at`   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX (`branch_id`),
+  INDEX (`txn_date`),
+  FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`)
+) ENGINE=InnoDB;
+
+-- Additional performance indexes
+ALTER TABLE `sales`          ADD INDEX IF NOT EXISTS `idx_sale_date`     (`sale_date`);
+ALTER TABLE `sales`          ADD INDEX IF NOT EXISTS `idx_sale_branch`   (`branch_id`);
+ALTER TABLE `purchases`      ADD INDEX IF NOT EXISTS `idx_pur_date`      (`purchase_date`);
+ALTER TABLE `purchases`      ADD INDEX IF NOT EXISTS `idx_pur_branch`    (`branch_id`);
+ALTER TABLE `service_jobs`   ADD INDEX IF NOT EXISTS `idx_sj_branch`     (`branch_id`);
+ALTER TABLE `service_jobs`   ADD INDEX IF NOT EXISTS `idx_sj_received`   (`received_at`);
+ALTER TABLE `expenses`       ADD INDEX IF NOT EXISTS `idx_exp_date`      (`expense_date`);
+ALTER TABLE `expenses`       ADD INDEX IF NOT EXISTS `idx_exp_branch`    (`branch_id`);
+ALTER TABLE `second_hand_purchases` ADD INDEX IF NOT EXISTS `idx_shp_branch` (`branch_id`);
 
 SET foreign_key_checks = 1;

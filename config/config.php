@@ -6,6 +6,11 @@
 define('APP_NAME',    'Rani Mobiles ERP');
 define('APP_VERSION', '1.0.0');
 
+// ── Domain / URL ──────────────────────────────────────────────
+// Set this to the actual hostname in production (e.g., 'yourdomain.com')
+// This is used to build absolute URLs safely (avoids host-header injection).
+define('APP_HOST',    isset($_SERVER['HTTP_HOST']) ? filter_var($_SERVER['HTTP_HOST'], FILTER_SANITIZE_URL) : 'localhost');
+
 // ── Database ──────────────────────────────────────────────────
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'rani_erp');

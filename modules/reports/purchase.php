@@ -39,6 +39,32 @@ $topVendors->execute($params);
 $topVendors = $topVendors->fetchAll();
 
 $branches = $pdo->query('SELECT id, code FROM branches ORDER BY code')->fetchAll();
+
+// CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    $exportRows = $pdo->prepare(
+        'SELECT p.invoice_no, p.purchase_date, b.code AS branch, p.vendor_name,
+                p.total, p.paid, p.balance, p.gst_amount, p.payment_mode, p.notes
+         FROM purchases p JOIN branches b ON b.id=p.branch_id
+         WHERE ' . implode(' AND ', $where) . ' ORDER BY p.purchase_date DESC'
+    );
+    $exportRows->execute($params);
+    $rows = $exportRows->fetchAll();
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="purchase_report_' . $fromDate . '_to_' . $toDate . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Invoice No','Date','Branch','Vendor','Total','Paid','Balance','GST','Payment Mode','Notes']);
+    foreach ($rows as $r) {
+        fputcsv($out, [
+            $r['invoice_no'], $r['purchase_date'], $r['branch'], $r['vendor_name'],
+            $r['total'], $r['paid'], $r['balance'], $r['gst_amount'], $r['payment_mode'], $r['notes']
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Purchase Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -46,9 +72,15 @@ $pageTitle = 'Purchase Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-graph-down me-2"></i>Purchase Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer"></i> Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer"></i> Print / PDF
+    </button>
+    <a href="?from=<?= urlencode($fromDate) ?>&to=<?= urlencode($toDate) ?>&branch=<?= $fBranch ?>&export=csv"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export CSV
+    </a>
+  </div>
 </div>
 
 <div class="erp-form-card mb-3 no-print">

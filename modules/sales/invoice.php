@@ -37,6 +37,15 @@ $settings = [];
 foreach ($pdo->query("SELECT key_name, key_value FROM system_settings") as $row) {
     $settings[$row['key_name']] = $row['key_value'];
 }
+
+// Build WhatsApp share URL - use APP_HOST from config to avoid host header injection
+$invoiceUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+              . '://' . APP_HOST . BASE_URL
+              . '/modules/sales/invoice.php?no=' . urlencode($sale['invoice_no']);
+$waText     = urlencode('Your invoice from ' . ($settings['business_name'] ?? 'Rani Mobiles') . ': ' . $invoiceUrl);
+
+// PDF mode: auto-print then close
+$pdfMode = isset($_GET['pdf']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -67,10 +76,30 @@ foreach ($pdo->query("SELECT key_name, key_value FROM system_settings") as $row)
   <button onclick="window.print()" style="padding:8px 20px;background:#0f3460;color:#fff;border:none;border-radius:6px;cursor:pointer">
     🖨 Print Invoice
   </button>
+  <a href="https://wa.me/?text=<?= $waText ?>" target="_blank"
+     style="padding:8px 20px;background:#25d366;color:#fff;border:none;border-radius:6px;cursor:pointer;text-decoration:none;display:inline-block;margin-left:8px">
+    📱 WhatsApp Bill
+  </a>
+  <button onclick="printAsPdf()"
+     style="padding:8px 20px;background:#dc3545;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px">
+    📄 Save as PDF
+  </button>
   <button onclick="window.close()" style="padding:8px 20px;background:#ccc;border:none;border-radius:6px;cursor:pointer;margin-left:8px">
     ✖ Close
   </button>
 </div>
+
+<script>
+function printAsPdf() {
+  const oldTitle = document.title;
+  document.title = 'Invoice-<?= clean($sale['invoice_no']) ?>';
+  window.print();
+  document.title = oldTitle;
+}
+<?php if ($pdfMode): ?>
+window.onload = function() { window.print(); };
+<?php endif; ?>
+</script>
 
 <div class="invoice-header">
   <h2><?= clean($settings['business_name'] ?? 'Rani Mobiles Sales & Service') ?></h2>

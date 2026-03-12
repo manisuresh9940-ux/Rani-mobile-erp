@@ -160,8 +160,14 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         <a href="<?= BASE_URL ?>/modules/reports/branch.php" class="nav-sublink <?= $currentFile==='branch.php'?'active':'' ?>">
           <i class="bi bi-shop me-2"></i>Branch Report
         </a>
-        <a href="<?= BASE_URL ?>/modules/reports/profit.php" class="nav-sublink <?= $currentFile==='profit.php'?'active':'' ?>">
+        <a href="<?= BASE_URL ?>/modules/reports/profit.php" class="nav-sublink <?= $currentFile==='profit.php'&&$currentDir==='reports'?'active':'' ?>">
           <i class="bi bi-currency-rupee me-2"></i>Profit Report
+        </a>
+        <a href="<?= BASE_URL ?>/modules/reports/repair.php" class="nav-sublink <?= $currentFile==='repair.php'&&$currentDir==='reports'?'active':'' ?>">
+          <i class="bi bi-tools me-2"></i>Repair Report
+        </a>
+        <a href="<?= BASE_URL ?>/modules/reports/secondhand.php" class="nav-sublink <?= $currentFile==='secondhand.php'&&$currentDir==='reports'?'active':'' ?>">
+          <i class="bi bi-recycle me-2"></i>Second-Hand Report
         </a>
       </div>
     </div>
@@ -178,6 +184,12 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         </a>
         <a href="<?= BASE_URL ?>/modules/settings/users.php" class="nav-sublink <?= $currentFile==='users.php'?'active':'' ?>">
           <i class="bi bi-people me-2"></i>Staff / Users
+        </a>
+        <a href="<?= BASE_URL ?>/modules/settings/suppliers.php" class="nav-sublink <?= $currentFile==='suppliers.php'?'active':'' ?>">
+          <i class="bi bi-building me-2"></i>Suppliers
+        </a>
+        <a href="<?= BASE_URL ?>/modules/stock/products.php" class="nav-sublink <?= $currentFile==='products.php'&&$currentDir==='stock'?'active':'' ?>">
+          <i class="bi bi-phone me-2"></i>Products
         </a>
         <a href="<?= BASE_URL ?>/modules/settings/general.php" class="nav-sublink <?= $currentFile==='general.php'?'active':'' ?>">
           <i class="bi bi-sliders me-2"></i>General

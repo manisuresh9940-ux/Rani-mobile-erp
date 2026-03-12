@@ -62,6 +62,21 @@ $totalExpenses = (float)$expQ->fetchColumn();
 $netProfit = (float)$totals['gross_profit'] - $totalExpenses;
 
 $branches = $pdo->query('SELECT id, code FROM branches ORDER BY code')->fetchAll();
+
+// CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="profit_report_' . $fromDate . '_to_' . $toDate . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Date','Revenue','Cost','Profit','Margin %']);
+    foreach ($dailyProfit as $d) {
+        $dm = $d['revenue'] > 0 ? round(($d['profit'] / $d['revenue']) * 100, 2) : 0;
+        fputcsv($out, [$d['date'], $d['revenue'], $d['cost'], $d['profit'], $dm]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Profit Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -69,9 +84,15 @@ $pageTitle = 'Profit Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-currency-rupee me-2"></i>Profit Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer"></i> Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer"></i> Print / PDF
+    </button>
+    <a href="?from=<?= urlencode($fromDate) ?>&to=<?= urlencode($toDate) ?>&branch=<?= $fBranch ?>&export=csv"
+       class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export CSV
+    </a>
+  </div>
 </div>
 
 <div class="erp-form-card mb-3 no-print">
@@ -153,7 +174,7 @@ $pageTitle = 'Profit Report';
 <?php if (!empty($dailyProfit)): ?>
 <div class="chart-card mb-4">
   <div class="chart-title">Daily Profit Trend</div>
-  <div id="profitChart"></div>
+  <canvas id="profitChart" height="80"></canvas>
 </div>
 <?php endif; ?>
 
@@ -197,19 +218,49 @@ $pageTitle = 'Profit Report';
 
 <script>
 <?php if (!empty($dailyProfit)): ?>
-new ApexCharts(document.getElementById('profitChart'), {
-  chart:   { type: 'area', height: 220, toolbar: { show: false } },
-  series:  [
-    { name: 'Revenue', data: <?= json_encode(array_column($dailyProfit, 'revenue')) ?> },
-    { name: 'Profit',  data: <?= json_encode(array_column($dailyProfit, 'profit')) ?> }
-  ],
-  xaxis:   { categories: <?= json_encode(array_map(fn($d) => date('d M', strtotime($d['date'])), $dailyProfit)) ?> },
-  yaxis:   { labels: { formatter: v => '₹' + parseFloat(v).toLocaleString('en-IN') } },
-  colors:  ['#0f3460', '#28a745'],
-  stroke:  { curve: 'smooth', width: 2 },
-  fill:    { type: 'gradient', gradient: { opacityFrom: 0.3, opacityTo: 0.05 } },
-  tooltip: { y: { formatter: v => '₹' + parseFloat(v).toLocaleString('en-IN') } }
-}).render();
+(function() {
+  const labels = <?= json_encode(array_map(fn($d) => date('d M', strtotime($d['date'])), $dailyProfit)) ?>;
+  const revenues = <?= json_encode(array_column($dailyProfit, 'revenue')) ?>;
+  const profits  = <?= json_encode(array_column($dailyProfit, 'profit')) ?>;
+
+  const ctx = document.getElementById('profitChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Revenue',
+          data: revenues.map(v => parseFloat(v)),
+          borderColor: '#0f3460',
+          backgroundColor: 'rgba(15,52,96,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3
+        },
+        {
+          label: 'Profit',
+          data: profits.map(v => parseFloat(v)),
+          borderColor: '#28a745',
+          backgroundColor: 'rgba(40,167,69,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ₹' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+})();
 <?php endif; ?>
 </script>
 

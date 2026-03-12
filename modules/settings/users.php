@@ -83,6 +83,24 @@ $users    = $pdo->query(
 $branches = $pdo->query('SELECT id, code, name FROM branches ORDER BY code')->fetchAll();
 $roles    = $pdo->query('SELECT id, name FROM roles ORDER BY id')->fetchAll();
 
+// Sales performance by staff (this month)
+$perfFrom = date('Y-m-01');
+$perfTo   = date('Y-m-d');
+$staffPerf = $pdo->prepare(
+    'SELECT u.id, u.full_name, b.code AS branch_code, r.name AS role_name,
+            COUNT(s.id) AS sales_count,
+            COALESCE(SUM(s.total),0) AS sales_total
+     FROM users u
+     JOIN branches b ON b.id=u.branch_id
+     JOIN roles r ON r.id=u.role_id
+     LEFT JOIN sales s ON s.created_by=u.id AND s.sale_date BETWEEN ? AND ?
+     WHERE u.is_active=1
+     GROUP BY u.id
+     ORDER BY sales_total DESC'
+);
+$staffPerf->execute([$perfFrom, $perfTo]);
+$staffPerf = $staffPerf->fetchAll();
+
 $pageTitle = 'Staff / Users';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -219,6 +237,38 @@ $pageTitle = 'Staff / Users';
               <?php endif; ?>
             </td>
           </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Staff Performance (This Month) -->
+<div class="erp-table mt-4">
+  <div class="p-3 border-bottom fw-bold"><i class="bi bi-bar-chart me-2"></i>Sales Performance — <?= date('F Y') ?></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr><th>Staff</th><th>Branch</th><th>Role</th><th class="text-end">Sales</th><th class="text-end">Revenue</th><th>Performance</th></tr>
+      </thead>
+      <tbody>
+        <?php
+          $maxSales = max(1, array_reduce($staffPerf, fn($c, $r) => max($c, (float)$r['sales_total']), 0));
+          foreach ($staffPerf as $p):
+            $pct = min(100, round(($p['sales_total'] / $maxSales) * 100));
+        ?>
+        <tr>
+          <td class="fw-semibold"><?= clean($p['full_name']) ?></td>
+          <td><span class="badge bg-primary"><?= clean($p['branch_code']) ?></span></td>
+          <td><span class="badge bg-secondary"><?= clean($p['role_name']) ?></span></td>
+          <td class="text-end"><?= (int)$p['sales_count'] ?></td>
+          <td class="text-end fw-semibold"><?= money((float)$p['sales_total']) ?></td>
+          <td style="min-width:120px">
+            <div class="progress" style="height:10px">
+              <div class="progress-bar bg-success" style="width:<?= $pct ?>%"></div>
+            </div>
+          </td>
+        </tr>
         <?php endforeach; ?>
       </tbody>
     </table>

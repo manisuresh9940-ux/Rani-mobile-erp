@@ -63,6 +63,25 @@ function is_admin(): bool {
 }
 
 /**
+ * Check if current user is Admin or Manager/Supervisor.
+ */
+function is_manager_up(): bool {
+    return in_array($_SESSION['role'] ?? '', ['Admin', 'Manager'], true);
+}
+
+/**
+ * Require Admin or Manager role (Supervisor = Manager in DB).
+ * Redirects to dashboard with access_denied error for Staff/Cashier/Technician.
+ */
+function require_manager_up(): void {
+    require_auth();
+    if (!is_manager_up()) {
+        header('Location: ' . BASE_URL . '/dashboard.php?err=access_denied');
+        exit;
+    }
+}
+
+/**
  * Sanitize and validate CSRF token.
  */
 function csrf_token(): string {

@@ -38,6 +38,24 @@ $totalSellVal = array_sum(array_column($stocks, 'sell_value'));
 $totalItems   = count($stocks);
 
 $branches = $pdo->query('SELECT id, code FROM branches ORDER BY code')->fetchAll();
+
+// CSV export
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="stock_report.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Brand','Product','Model','Category','Qty','Purchase Cost','Sale Price','Min Stock','Cost Value','Sell Value']);
+    foreach ($stocks as $s) {
+        fputcsv($out, [
+            $s['brand'], $s['name'], $s['model'], $s['category'],
+            $s['total_qty'], $s['purchase_cost'], $s['sale_price'], $s['min_stock'],
+            $s['cost_value'], $s['sell_value']
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $pageTitle = 'Stock Report';
 ?>
 <?php include __DIR__ . '/../../includes/header.php'; ?>
@@ -45,9 +63,14 @@ $pageTitle = 'Stock Report';
 
 <div class="page-header">
   <h1 class="page-title"><i class="bi bi-boxes me-2"></i>Stock Report</h1>
-  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm no-print">
-    <i class="bi bi-printer"></i> Print
-  </button>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-printer"></i> Print / PDF
+    </button>
+    <a href="?branch=<?= $fBranch ?>&export=csv" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export CSV
+    </a>
+  </div>
 </div>
 
 <div class="erp-form-card mb-3 no-print">

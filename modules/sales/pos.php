@@ -125,9 +125,21 @@ $pageTitle = 'POS — New Sale';
       <div style="font-size:4rem">✅</div>
       <h4 class="text-success fw-bold mt-2">Sale Saved!</h4>
       <p class="text-muted">Invoice: <strong><?= clean($message) ?></strong></p>
-      <div class="d-flex gap-2 justify-content-center">
+      <div class="d-flex gap-2 justify-content-center flex-wrap">
         <a href="<?= BASE_URL ?>/modules/sales/invoice.php?no=<?= urlencode($message) ?>" target="_blank" class="btn btn-primary">
           <i class="bi bi-printer me-1"></i>Print Invoice
+        </a>
+        <?php
+          $invoiceUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+                        . '://' . APP_HOST . BASE_URL
+                        . '/modules/sales/invoice.php?no=' . urlencode($message);
+          $waMsg = urlencode("Your invoice from Rani Mobiles: " . $invoiceUrl);
+        ?>
+        <a href="https://wa.me/?text=<?= $waMsg ?>" target="_blank" class="btn btn-success">
+          <i class="bi bi-whatsapp me-1"></i>WhatsApp Bill
+        </a>
+        <a href="<?= BASE_URL ?>/modules/sales/invoice.php?no=<?= urlencode($message) ?>&pdf=1" target="_blank" class="btn btn-outline-danger">
+          <i class="bi bi-file-pdf me-1"></i>PDF Bill
         </a>
         <a href="<?= BASE_URL ?>/modules/sales/pos.php" class="btn btn-outline-success">
           <i class="bi bi-plus me-1"></i>New Sale

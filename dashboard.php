@@ -88,6 +88,37 @@ for ($i = 6; $i >= 0; $i--) {
     $daySales[] = round((float)$q->fetchColumn(), 2);
 }
 
+// Last 6 months sales
+$months = []; $monthSales = [];
+for ($i = 5; $i >= 0; $i--) {
+    $m = date('Y-m', strtotime("-$i months"));
+    $months[] = date('M Y', strtotime("$m-01"));
+    if ($isAdmin) {
+        $q = $pdo->prepare("SELECT COALESCE(SUM(total),0) FROM sales WHERE DATE_FORMAT(sale_date,'%Y-%m')=?");
+        $q->execute([$m]);
+    } else {
+        $q = $pdo->prepare("SELECT COALESCE(SUM(total),0) FROM sales WHERE DATE_FORMAT(sale_date,'%Y-%m')=? AND branch_id=?");
+        $q->execute([$m, $branch_id]);
+    }
+    $monthSales[] = round((float)$q->fetchColumn(), 2);
+}
+
+// Top selling models (this month)
+$topModelsQ = $isAdmin
+    ? $pdo->prepare("SELECT p.name, br.name AS brand, SUM(si.qty) AS qty_sold
+                     FROM sale_items si JOIN sales s ON s.id=si.sale_id
+                     JOIN products p ON p.id=si.product_id JOIN brands br ON br.id=p.brand_id
+                     WHERE DATE_FORMAT(s.sale_date,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+                     GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 5")
+    : $pdo->prepare("SELECT p.name, br.name AS brand, SUM(si.qty) AS qty_sold
+                     FROM sale_items si JOIN sales s ON s.id=si.sale_id
+                     JOIN products p ON p.id=si.product_id JOIN brands br ON br.id=p.brand_id
+                     WHERE DATE_FORMAT(s.sale_date,'%Y-%m')=DATE_FORMAT(CURDATE(),'%Y-%m')
+                       AND s.branch_id=?
+                     GROUP BY si.product_id ORDER BY qty_sold DESC LIMIT 5");
+$topModelsQ->execute($isAdmin ? [] : [$branch_id]);
+$topModels = $topModelsQ->fetchAll();
+
 // Branch comparison (admin only)
 $branchSales = [];
 if ($isAdmin) {
@@ -226,14 +257,47 @@ $pageTitle = 'Dashboard';
   <div class="col-lg-8">
     <div class="chart-card">
       <div class="chart-title"><i class="bi bi-bar-chart-line me-2"></i>Sales — Last 7 Days</div>
-      <div id="dailySalesChart"></div>
+      <canvas id="dailySalesChart" height="100"></canvas>
     </div>
   </div>
   <!-- Branch Comparison -->
   <div class="col-lg-4">
     <div class="chart-card">
       <div class="chart-title"><i class="bi bi-shop me-2"></i>Today Branch Comparison</div>
-      <div id="branchChart"></div>
+      <canvas id="branchChart" height="140"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Monthly Sales + Top Models Row -->
+<div class="row g-3 mb-4">
+  <!-- Monthly Sales Chart -->
+  <div class="col-lg-7">
+    <div class="chart-card">
+      <div class="chart-title"><i class="bi bi-graph-up me-2"></i>Monthly Sales — Last 6 Months</div>
+      <canvas id="monthlySalesChart" height="110"></canvas>
+    </div>
+  </div>
+  <!-- Top Selling Models -->
+  <div class="col-lg-5">
+    <div class="erp-table h-100">
+      <div class="p-3 border-bottom fw-bold text-success"><i class="bi bi-trophy me-2"></i>Top Selling Models (This Month)</div>
+      <?php if (empty($topModels)): ?>
+        <div class="text-center text-muted py-3">No sales this month</div>
+      <?php else: ?>
+        <table class="table table-sm mb-0">
+          <thead><tr><th>#</th><th>Model</th><th class="text-end">Qty</th></tr></thead>
+          <tbody>
+            <?php foreach ($topModels as $i => $m): ?>
+              <tr>
+                <td><?= $i === 0 ? '🥇' : ($i === 1 ? '🥈' : ($i === 2 ? '🥉' : $i + 1)) ?></td>
+                <td><?= clean($m['brand']) ?> <?= clean($m['name']) ?></td>
+                <td class="text-end fw-semibold"><?= (int)$m['qty_sold'] ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
     </div>
   </div>
 </div>
@@ -317,38 +381,90 @@ $pageTitle = 'Dashboard';
 <script>
 (function() {
   // ── Daily Sales Chart ──────────────────────────────────────
-  const salesOpts = {
-    chart: { type: 'area', height: 240, toolbar: { show: false }, animations: { enabled: true } },
-    series: [{ name: 'Sales', data: <?= json_encode($daySales) ?> }],
-    xaxis: { categories: <?= json_encode($days) ?> },
-    yaxis: { labels: { formatter: v => '₹' + v.toLocaleString('en-IN') } },
-    dataLabels: { enabled: false },
-    stroke:     { curve: 'smooth', width: 3 },
-    fill: {
-      type: 'gradient',
-      gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 }
+  const salesCtx = document.getElementById('dailySalesChart').getContext('2d');
+  new Chart(salesCtx, {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode($days) ?>,
+      datasets: [{
+        label: 'Sales (₹)',
+        data: <?= json_encode($daySales) ?>,
+        backgroundColor: 'rgba(15,52,96,0.7)',
+        borderColor: '#0f3460',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
     },
-    colors: ['#0f3460'],
-    tooltip: { y: { formatter: v => '₹' + v.toLocaleString('en-IN') } },
-    grid: { borderColor: '#f0f0f0' }
-  };
-  new ApexCharts(document.getElementById('dailySalesChart'), salesOpts).render();
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
 
   // ── Branch Comparison Chart ────────────────────────────────
   <?php if ($isAdmin && !empty($branchSales)): ?>
-  const branchOpts = {
-    chart: { type: 'donut', height: 240, toolbar: { show: false } },
-    series: <?= json_encode($branchSales['data'] ?? []) ?>,
-    labels: <?= json_encode($branchSales['labels'] ?? []) ?>,
-    legend: { position: 'bottom' },
-    colors: ['#0f3460','#e94560','#28a745','#ffc107','#17a2b8'],
-    tooltip: { y: { formatter: v => '₹' + v.toLocaleString('en-IN') } },
-    plotOptions: { pie: { donut: { labels: { show: true, total: { show: true, label: 'Total', formatter: (w) => '₹' + w.globals.seriesTotals.reduce((a,b)=>a+b,0).toLocaleString('en-IN') } } } } }
-  };
-  new ApexCharts(document.getElementById('branchChart'), branchOpts).render();
+  const branchCtx = document.getElementById('branchChart').getContext('2d');
+  new Chart(branchCtx, {
+    type: 'doughnut',
+    data: {
+      labels: <?= json_encode($branchSales['labels'] ?? []) ?>,
+      datasets: [{
+        data: <?= json_encode($branchSales['data'] ?? []) ?>,
+        backgroundColor: ['#0f3460','#e94560','#28a745','#ffc107','#17a2b8'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': ₹' + ctx.parsed.toLocaleString('en-IN') } }
+      }
+    }
+  });
   <?php else: ?>
-  document.getElementById('branchChart').innerHTML = '<div class="text-center text-muted py-5">Branch comparison available for Admin only</div>';
+  const branchCanvas = document.getElementById('branchChart');
+  const parentDiv = branchCanvas.parentNode;
+  branchCanvas.remove();
+  parentDiv.insertAdjacentHTML('beforeend', '<div class="text-center text-muted py-5">Branch comparison available for Admin only</div>');
   <?php endif; ?>
+
+  // ── Monthly Sales Chart ────────────────────────────────────
+  const monthCtx = document.getElementById('monthlySalesChart').getContext('2d');
+  new Chart(monthCtx, {
+    type: 'line',
+    data: {
+      labels: <?= json_encode($months) ?>,
+      datasets: [{
+        label: 'Monthly Sales (₹)',
+        data: <?= json_encode($monthSales) ?>,
+        borderColor: '#0f3460',
+        backgroundColor: 'rgba(15,52,96,0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: '#0f3460'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '₹' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
 })();
 </script>
 
