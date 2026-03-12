@@ -90,25 +90,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_purchase'])) {
                 $imeisRaw = trim($item['imeis'] ?? '');
                 if ($imeisRaw) {
                     $duplicateImeis = [];
+                    $sellPrice = (float)($item['sell_price'] ?? $item['cost'] ?? 0);
+
                     foreach (preg_split('/[\s,\n]+/', $imeisRaw) as $imei) {
                         $imei = trim($imei);
                         if (!$imei) continue;
-                        // Check for duplicate IMEI
+                        // Check for duplicate IMEI in both tables
                         $imeiCheckStmt = $pdo->prepare('SELECT id, status FROM imei_numbers WHERE imei=?');
                         $imeiCheckStmt->execute([$imei]);
                         $existing = $imeiCheckStmt->fetch();
+                        if (!$existing) {
+                            // Also check imei_stock
+                            $imeiCheckStmt2 = $pdo->prepare('SELECT id, status FROM imei_stock WHERE imei=?');
+                            $imeiCheckStmt2->execute([$imei]);
+                            $existing = $imeiCheckStmt2->fetch();
+                        }
                         if ($existing) {
                             $duplicateImeis[] = $imei . ' (status: ' . $existing['status'] . ')';
                             continue;
                         }
+                        // Insert to imei_numbers (existing tracking table)
                         $pdo->prepare(
                             'INSERT INTO imei_numbers (product_id,branch_id,imei,purchase_id)
                              VALUES (?,?,?,?)'
                         )->execute([$prod_id, $branch_id, $imei, $pur_id]);
+                        // Insert to imei_stock (spec-aligned table)
+                        $pdo->prepare(
+                            'INSERT INTO imei_stock (product_id,imei,purchase_price,selling_price,branch_id,status)
+                             VALUES (?,?,?,?,?,?)'
+                        )->execute([$prod_id, $imei, $cost, $sellPrice, $branch_id, 'available']);
                     }
                     if ($duplicateImeis) {
+                        $count   = count($duplicateImeis);
+                        $preview = implode(', ', array_slice($duplicateImeis, 0, 3));
+                        $extra   = $count > 3 ? " and " . ($count - 3) . " more" : "";
                         throw new RuntimeException(
-                            'Duplicate IMEI(s) detected — already in system: ' . implode(', ', $duplicateImeis)
+                            "Duplicate IMEI(s) detected ($count total): $preview$extra"
                         );
                     }
                 }
@@ -117,6 +134,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_purchase'])) {
             // Update vendor balance
             if ($vid && $balance > 0) {
                 $pdo->prepare('UPDATE vendors SET balance=balance+? WHERE id=?')->execute([$balance, $vid]);
+            }
+
+            // ── cashbook: record purchase payment out ─────────────────
+            if ($paid > 0) {
+                $pdo->prepare(
+                    'INSERT INTO cashbook (branch_id,txn_date,txn_type,category,description,amount,ref_no,created_by)
+                     VALUES (?,?,?,?,?,?,?,?)'
+                )->execute([
+                    $branch_id, $purchase_date, 'out', 'purchase',
+                    "Purchase from " . ($vendor_name ?: 'supplier') . ": $invoice_no",
+                    $paid, $invoice_no, $user['id']
+                ]);
             }
 
             $pdo->commit();

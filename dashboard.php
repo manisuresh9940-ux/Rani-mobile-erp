@@ -58,12 +58,19 @@ $q = $isAdmin
 $q->execute($isAdmin ? [] : [$branch_id]);
 $stockValue = (float)$q->fetchColumn();
 
-// Low stock items
+// Low stock items (qty < 3 or below min_stock — whichever is lower)
 $q = $isAdmin
-   ? $pdo->prepare("SELECT COUNT(*) FROM stock s JOIN products p ON p.id=s.product_id WHERE s.qty <= p.min_stock AND s.qty > 0")
-   : $pdo->prepare("SELECT COUNT(*) FROM stock s JOIN products p ON p.id=s.product_id WHERE s.branch_id=? AND s.qty <= p.min_stock AND s.qty > 0");
+   ? $pdo->prepare("SELECT COUNT(*) FROM stock s JOIN products p ON p.id=s.product_id WHERE s.qty <= LEAST(p.min_stock, 3) AND s.qty > 0")
+   : $pdo->prepare("SELECT COUNT(*) FROM stock s JOIN products p ON p.id=s.product_id WHERE s.branch_id=? AND s.qty <= LEAST(p.min_stock, 3) AND s.qty > 0");
 $q->execute($isAdmin ? [] : [$branch_id]);
 $lowStockCount = (int)$q->fetchColumn();
+
+// Repair pending (status not 'delivered')
+$q = $isAdmin
+   ? $pdo->prepare("SELECT COUNT(*) FROM service_jobs WHERE status NOT IN ('delivered')")
+   : $pdo->prepare("SELECT COUNT(*) FROM service_jobs WHERE branch_id=? AND status NOT IN ('delivered')");
+$q->execute($isAdmin ? [] : [$branch_id]);
+$repairPending = (int)$q->fetchColumn();
 
 // Pending payments (credit sales)
 $q = $isAdmin
@@ -246,7 +253,14 @@ $pageTitle = 'Dashboard';
     <div class="kpi-card kpi-low">
       <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
       <div class="kpi-value"><?= $lowStockCount ?></div>
-      <div class="kpi-label">Low Stock Items</div>
+      <div class="kpi-label">Low Stock</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2 fade-in-up">
+    <div class="kpi-card" style="border-left:4px solid #fd7e14">
+      <div class="kpi-icon" style="color:#fd7e14"><i class="bi bi-tools"></i></div>
+      <div class="kpi-value"><?= $repairPending ?></div>
+      <div class="kpi-label">Repair Pending</div>
     </div>
   </div>
 </div>
@@ -290,7 +304,12 @@ $pageTitle = 'Dashboard';
           <tbody>
             <?php foreach ($topModels as $i => $m): ?>
               <tr>
-                <td><?= $i === 0 ? '🥇' : ($i === 1 ? '🥈' : ($i === 2 ? '🥉' : $i + 1)) ?></td>
+                <td><?php
+                  if ($i === 0) echo '🥇';
+                  elseif ($i === 1) echo '🥈';
+                  elseif ($i === 2) echo '🥉';
+                  else echo $i + 1;
+                ?></td>
                 <td><?= clean($m['brand']) ?> <?= clean($m['name']) ?></td>
                 <td class="text-end fw-semibold"><?= (int)$m['qty_sold'] ?></td>
               </tr>

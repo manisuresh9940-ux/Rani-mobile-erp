@@ -88,10 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_sale'])) {
                 // Deduct stock
                 update_stock($branch_id, $prod_id, -$qty);
 
-                // Update IMEI status
+                // Update IMEI status in imei_numbers
                 if ($imei) {
                     $pdo->prepare('UPDATE imei_numbers SET status=?,sale_id=? WHERE imei=?')
                         ->execute(['sold', $sale_id, $imei]);
+                    // Also update imei_stock status if record exists
+                    $pdo->prepare('UPDATE imei_stock SET status=? WHERE imei=?')
+                        ->execute(['sold', $imei]);
                 }
             }
 
@@ -99,6 +102,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_sale'])) {
             if ($cust_id) {
                 $pdo->prepare('UPDATE customers SET total_purchases=total_purchases+?, last_purchase=CURDATE() WHERE id=?')
                     ->execute([$total, $cust_id]);
+            }
+
+            // ── sale_payments: normalised payment breakdown ──────────
+            $salePayments = [
+                'cash' => $paid_cash,
+                'upi'  => $paid_upi,
+                'card' => $paid_card,
+                'bank' => $paid_credit,   // credit maps to bank pending
+            ];
+            $spStmt = $pdo->prepare(
+                'INSERT INTO sale_payments (sale_id, payment_type, amount) VALUES (?,?,?)'
+            );
+            foreach ($salePayments as $ptype => $pamt) {
+                if ($pamt > 0) {
+                    $spStmt->execute([$sale_id, $ptype, $pamt]);
+                }
+            }
+
+            // ── staff_sales: track staff performance ─────────────────
+            // Calculate total profit for this sale
+            $saleProfit = 0;
+            foreach ($items as $item) {
+                $qty     = max(1, (int)$item['qty']);
+                $price   = (float)$item['sale_price'];
+                $disc    = (float)($item['discount'] ?? 0);
+                $cost    = (float)($item['purchase_cost'] ?? 0);
+                $line    = ($price * $qty) - $disc;
+                $saleProfit += $line - ($cost * $qty);
+            }
+            $pdo->prepare(
+                'INSERT INTO staff_sales (staff_id, sale_id, amount, profit, date)
+                 VALUES (?,?,?,?,CURDATE())'
+            )->execute([$user['id'], $sale_id, $total, round($saleProfit, 2)]);
+
+            // ── cashbook: record cash/upi/card receipts ───────────────
+            $cbStmt = $pdo->prepare(
+                'INSERT INTO cashbook (branch_id,txn_date,txn_type,category,description,amount,ref_no,created_by)
+                 VALUES (?,CURDATE(),?,?,?,?,?,?)'
+            );
+            if ($paid_cash > 0) {
+                $cbStmt->execute([$branch_id, 'in', 'sale', "Cash sale: $invoice_no", $paid_cash, $invoice_no, $user['id']]);
+            }
+            if ($paid_upi > 0) {
+                $cbStmt->execute([$branch_id, 'in', 'sale', "UPI sale: $invoice_no", $paid_upi, $invoice_no, $user['id']]);
+            }
+            if ($paid_card > 0) {
+                $cbStmt->execute([$branch_id, 'in', 'sale', "Card sale: $invoice_no", $paid_card, $invoice_no, $user['id']]);
             }
 
             $pdo->commit();
@@ -394,11 +444,40 @@ function renderResults(products) {
 }
 
 function addFromSearch(product) {
-  // If IMEI tracked, prompt for IMEI
+  // If IMEI tracked, prompt for IMEI with live duplicate check
   if (parseInt(product.imei_tracking)) {
     const imei = window.prompt('Enter IMEI for ' + product.name + ':');
     if (!imei) return;
-    product.imei = imei.trim();
+    const trimmedImei = imei.trim();
+    // Async IMEI duplicate check before adding to cart
+    fetch(`${BASE_URL}/api/check_imei.php?imei=${encodeURIComponent(trimmedImei)}`)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(d => {
+        if (d.exists) {
+          showToast(
+            `IMEI ${trimmedImei} already in system (${d.status}) — ${d.product} @ ${d.branch}`,
+            'error', 5000
+          );
+        } else {
+          product.imei = trimmedImei;
+          POS.addItem(product);
+          searchInput.value = '';
+          searchResults.style.display='none';
+          showToast(product.name + ' added to cart', 'success', 2000);
+        }
+      })
+      .catch(() => {
+        // If API fails, still allow (offline fallback)
+        product.imei = trimmedImei;
+        POS.addItem(product);
+        searchInput.value = '';
+        searchResults.style.display='none';
+        showToast(product.name + ' added to cart', 'success', 2000);
+      });
+    return;
   }
   POS.addItem(product);
   searchInput.value = '';

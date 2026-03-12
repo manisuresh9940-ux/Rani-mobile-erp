@@ -28,6 +28,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_expense'])) {
             'INSERT INTO expenses (ref_no,branch_id,category,description,amount,expense_date,payment_mode,created_by)
              VALUES (?,?,?,?,?,?,?,?)'
         )->execute([$ref_no, $branch_id, $category, $description, $amount, $expense_date, $payment_mode, $user['id']]);
+
+        // Insert to cashbook as 'out' transaction
+        $pdo->prepare(
+            'INSERT INTO cashbook (branch_id,txn_date,txn_type,category,description,amount,ref_no,created_by)
+             VALUES (?,?,?,?,?,?,?,?)'
+        )->execute([
+            $branch_id, $expense_date, 'out', 'expense',
+            ($category ?: 'Expense') . ': ' . ($description ?: $ref_no),
+            $amount, $ref_no, $user['id']
+        ]);
+
         log_activity('ADD_EXPENSE', "Ref: $ref_no, Amount: $amount");
         $message = 'Expense saved.';
     }
@@ -48,8 +59,8 @@ $expenses = $expenses->fetchAll();
 
 $totalExpenses = array_sum(array_column($expenses, 'amount'));
 
-$expCategories = ['Rent', 'Electricity', 'Internet', 'Salary', 'Commission',
-                  'Repair Parts', 'Travel', 'Office Supply', 'Miscellaneous'];
+$expCategories = ['Rent', 'Salary', 'Electricity', 'Miscellaneous',
+                  'Internet', 'Commission', 'Repair Parts', 'Travel', 'Office Supply'];
 
 $pageTitle = 'Expenses';
 ?>

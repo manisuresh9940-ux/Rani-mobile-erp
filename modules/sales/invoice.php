@@ -97,7 +97,11 @@ function printAsPdf() {
   document.title = oldTitle;
 }
 <?php if ($pdfMode): ?>
-window.onload = function() { window.print(); };
+window.addEventListener('load', function() {
+  window.print();
+  // Close window after print dialog is dismissed
+  window.addEventListener('afterprint', function() { window.close(); });
+});
 <?php endif; ?>
 </script>
 

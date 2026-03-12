@@ -43,8 +43,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
   `name`  VARCHAR(50) NOT NULL UNIQUE
 ) ENGINE=InnoDB;
 
-INSERT INTO `roles` (`name`) VALUES ('Admin'),('Manager'),('Cashier'),('Technician'),('Supervisor'),('Staff')
-ON DUPLICATE KEY UPDATE `name`=`name`;
+INSERT IGNORE INTO `roles` (`name`) VALUES ('Admin'),('Manager'),('Cashier'),('Technician'),('Supervisor'),('Staff');
 
 -- -------------------------
 -- Table: users
@@ -560,5 +559,95 @@ ALTER TABLE `service_jobs`   ADD INDEX IF NOT EXISTS `idx_sj_received`   (`recei
 ALTER TABLE `expenses`       ADD INDEX IF NOT EXISTS `idx_exp_date`      (`expense_date`);
 ALTER TABLE `expenses`       ADD INDEX IF NOT EXISTS `idx_exp_branch`    (`branch_id`);
 ALTER TABLE `second_hand_purchases` ADD INDEX IF NOT EXISTS `idx_shp_branch` (`branch_id`);
+
+-- =========================================================
+-- Spec-aligned tables (added to match ERP schema spec)
+-- =========================================================
+
+-- -------------------------
+-- Table: suppliers
+-- Spec-compliant alias for vendors (separate table for portability)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS `suppliers` (
+  `id`         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `name`       VARCHAR(100) NOT NULL,
+  `phone`      VARCHAR(20),
+  `address`    TEXT,
+  `gst`        VARCHAR(20),
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- -------------------------
+-- Table: imei_stock
+-- Spec-compliant IMEI tracking (status: available/sold/transfer/repair)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS `imei_stock` (
+  `id`             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `product_id`     INT UNSIGNED NOT NULL,
+  `imei`           VARCHAR(20) NOT NULL UNIQUE,
+  `purchase_price` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `selling_price`  DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `branch_id`      INT UNSIGNED NOT NULL,
+  `status`         ENUM('available','sold','transfer','repair') DEFAULT 'available',
+  `created_at`     DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX (`imei`),
+  INDEX (`branch_id`),
+  INDEX (`status`),
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`),
+  FOREIGN KEY (`branch_id`)  REFERENCES `branches`(`id`)
+) ENGINE=InnoDB;
+
+-- -------------------------
+-- Table: sale_payments
+-- Mixed-payment breakdown per sale (cash/upi/card/bank)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS `sale_payments` (
+  `id`           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `sale_id`      INT UNSIGNED NOT NULL,
+  `payment_type` ENUM('cash','upi','card','bank') NOT NULL,
+  `amount`       DECIMAL(12,2) NOT NULL,
+  `created_at`   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX (`sale_id`),
+  FOREIGN KEY (`sale_id`) REFERENCES `sales`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- -------------------------
+-- Table: staff_sales
+-- Staff-level sales & profit tracking
+-- -------------------------
+CREATE TABLE IF NOT EXISTS `staff_sales` (
+  `id`       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `staff_id` INT UNSIGNED NOT NULL,
+  `sale_id`  INT UNSIGNED NOT NULL,
+  `amount`   DECIMAL(12,2) NOT NULL,
+  `profit`   DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `date`     DATE NOT NULL,
+  INDEX (`staff_id`),
+  INDEX (`date`),
+  FOREIGN KEY (`staff_id`) REFERENCES `users`(`id`),
+  FOREIGN KEY (`sale_id`)  REFERENCES `sales`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- -------------------------
+-- Table: stock_transfers
+-- Simplified spec-aligned transfer log (product/IMEI level)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS `stock_transfers` (
+  `id`            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `product_id`    INT UNSIGNED NOT NULL,
+  `imei`          VARCHAR(20),
+  `from_branch`   INT UNSIGNED NOT NULL,
+  `to_branch`     INT UNSIGNED NOT NULL,
+  `transfer_date` DATE NOT NULL,
+  `status`        ENUM('pending','completed') DEFAULT 'pending',
+  `created_by`    INT UNSIGNED,
+  `created_at`    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX (`from_branch`),
+  INDEX (`to_branch`),
+  INDEX (`transfer_date`),
+  FOREIGN KEY (`product_id`)  REFERENCES `products`(`id`),
+  FOREIGN KEY (`from_branch`) REFERENCES `branches`(`id`),
+  FOREIGN KEY (`to_branch`)   REFERENCES `branches`(`id`)
+) ENGINE=InnoDB;
 
 SET foreign_key_checks = 1;

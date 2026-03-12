@@ -169,6 +169,9 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         <a href="<?= BASE_URL ?>/modules/reports/secondhand.php" class="nav-sublink <?= $currentFile==='secondhand.php'&&$currentDir==='reports'?'active':'' ?>">
           <i class="bi bi-recycle me-2"></i>Second-Hand Report
         </a>
+        <a href="<?= BASE_URL ?>/modules/reports/staff.php" class="nav-sublink <?= $currentFile==='staff.php'&&$currentDir==='reports'?'active':'' ?>">
+          <i class="bi bi-person-badge me-2"></i>Staff Report
+        </a>
       </div>
     </div>
 
