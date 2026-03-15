@@ -36,7 +36,7 @@ function require_auth(): void {
  */
 function require_admin(): void {
     require_auth();
-    if (($_SESSION['role'] ?? '') !== 'Admin') {
+    if (!is_admin()) {
         header('Location: ' . BASE_URL . '/dashboard.php?err=access_denied');
         exit;
     }
@@ -59,7 +59,14 @@ function current_user(): array {
  * Check if current user is Admin.
  */
 function is_admin(): bool {
-    return ($_SESSION['role'] ?? '') === 'Admin';
+    return (($_SESSION['role'] ?? '') === 'Admin');
+}
+
+/**
+ * Strict Admin-only check.
+ */
+function is_super_admin(): bool {
+    return (($_SESSION['role'] ?? '') === 'Admin');
 }
 
 /**

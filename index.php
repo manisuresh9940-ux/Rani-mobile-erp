@@ -12,14 +12,43 @@ if (!empty($_SESSION['user_id'])) {
 
 $error = '';
 
+$distanceMeters = static function (float $lat1, float $lon1, float $lat2, float $lon2): float {
+  $earthRadius = 6371000.0;
+  $dLat = deg2rad($lat2 - $lat1);
+  $dLon = deg2rad($lon2 - $lon1);
+
+  $a = sin($dLat / 2) * sin($dLat / 2)
+    + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
+    * sin($dLon / 2) * sin($dLon / 2);
+
+  return $earthRadius * (2 * atan2(sqrt($a), sqrt(1 - $a)));
+};
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
+  $gpsLatRaw      = trim((string)($_POST['gps_lat'] ?? ''));
+  $gpsLngRaw      = trim((string)($_POST['gps_lng'] ?? ''));
+  $gpsAccuracyRaw = trim((string)($_POST['gps_accuracy'] ?? ''));
+  $gpsErrorRaw    = trim((string)($_POST['gps_error'] ?? ''));
+
+  $gpsLat = (is_numeric($gpsLatRaw) && (float)$gpsLatRaw >= -90 && (float)$gpsLatRaw <= 90)
+    ? round((float)$gpsLatRaw, 8)
+    : null;
+  $gpsLng = (is_numeric($gpsLngRaw) && (float)$gpsLngRaw >= -180 && (float)$gpsLngRaw <= 180)
+    ? round((float)$gpsLngRaw, 8)
+    : null;
+  $gpsAccuracy = (is_numeric($gpsAccuracyRaw) && (float)$gpsAccuracyRaw >= 0)
+    ? round((float)$gpsAccuracyRaw, 2)
+    : null;
+  $gpsError = $gpsErrorRaw !== '' ? clean($gpsErrorRaw) : '';
+
     if ($username && $password) {
         $stmt = db()->prepare(
             'SELECT u.id, u.username, u.password, u.full_name, u.branch_id, u.is_active,
-                    r.name AS role, b.code AS branch_code, b.name AS branch_name
+          r.name AS role, b.code AS branch_code, b.name AS branch_name,
+          b.latitude AS branch_latitude, b.longitude AS branch_longitude, b.radius_m
              FROM users u
              JOIN roles    r ON r.id = u.role_id
              JOIN branches b ON b.id = u.branch_id
@@ -41,11 +70,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Record attendance
             $today = date('Y-m-d');
-            $settings = db()->prepare("SELECT key_value FROM system_settings WHERE key_name='login_end_time'")->execute() ? null : null;
+            $isLate = 0;
+            $settingsStmt = db()->prepare("SELECT key_value FROM system_settings WHERE key_name='login_end_time' LIMIT 1");
+            $settingsStmt->execute();
+            $loginEndTime = (string)($settingsStmt->fetchColumn() ?: '');
+            if ($loginEndTime !== '') {
+              $cutoff = strtotime(date('Y-m-d') . ' ' . $loginEndTime);
+              if ($cutoff !== false && time() > $cutoff) {
+                $isLate = 1;
+              }
+            }
+
+            $notes = [];
+            if ($gpsError !== '') {
+              $notes[] = 'GPS: ' . $gpsError;
+            }
+            if ($gpsAccuracy !== null) {
+              $notes[] = 'Accuracy: ' . $gpsAccuracy . 'm';
+            }
+
+            $branchLat = isset($user['branch_latitude']) && $user['branch_latitude'] !== null ? (float)$user['branch_latitude'] : null;
+            $branchLng = isset($user['branch_longitude']) && $user['branch_longitude'] !== null ? (float)$user['branch_longitude'] : null;
+            $radiusM = max(50, (int)($user['radius_m'] ?? 100));
+
+            if ($gpsLat !== null && $gpsLng !== null && $branchLat !== null && $branchLng !== null) {
+              $distance = round($distanceMeters($gpsLat, $gpsLng, $branchLat, $branchLng), 2);
+              $notes[] = 'Distance: ' . $distance . 'm';
+              if ($distance > $radiusM) {
+                $notes[] = 'Outside radius';
+              }
+            }
+
             db()->prepare(
-                'INSERT IGNORE INTO staff_attendance (user_id, branch_id, date, login_time)
-                 VALUES (?,?,?,NOW())'
-            )->execute([$user['id'], $user['branch_id'], $today]);
+              'INSERT IGNORE INTO staff_attendance
+               (user_id, branch_id, date, login_time, latitude, longitude, is_late, notes)
+               VALUES (?,?,?,NOW(),?,?,?,?)'
+            )->execute([
+              $user['id'],
+              $user['branch_id'],
+              $today,
+              $gpsLat,
+              $gpsLng,
+              $isLate,
+              $notes ? implode(' | ', $notes) : null,
+            ]);
 
             header('Location: ' . BASE_URL . '/dashboard.php');
             exit;
@@ -143,7 +211,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
   <?php endif; ?>
 
-  <form method="POST" autocomplete="off">
+  <form method="POST" autocomplete="off" id="loginForm">
+    <input type="hidden" name="gps_lat" id="gpsLat" value="">
+    <input type="hidden" name="gps_lng" id="gpsLng" value="">
+    <input type="hidden" name="gps_accuracy" id="gpsAccuracy" value="">
+    <input type="hidden" name="gps_error" id="gpsError" value="">
     <div class="mb-3">
       <div class="input-group">
         <span class="input-group-text"><i class="bi bi-person"></i></span>
@@ -163,6 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
     </button>
   </form>
+  <div id="gpsStatus" class="mt-2 text-white-50 small">Checking GPS location...</div>
   <p class="mt-3 text-white-50 small">Default: admin / Admin@1234</p>
 </div>
 <script>
@@ -172,6 +245,45 @@ function togglePwd() {
   if (inp.type === 'password') { inp.type='text'; ico.className='bi bi-eye-slash'; }
   else                          { inp.type='password'; ico.className='bi bi-eye'; }
 }
+
+(function initGpsCapture() {
+  const statusEl = document.getElementById('gpsStatus');
+  const latEl = document.getElementById('gpsLat');
+  const lngEl = document.getElementById('gpsLng');
+  const accEl = document.getElementById('gpsAccuracy');
+  const errEl = document.getElementById('gpsError');
+
+  if (!navigator.geolocation) {
+    statusEl.textContent = 'GPS not supported by this browser.';
+    errEl.value = 'Browser does not support geolocation';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function (position) {
+      latEl.value = position.coords.latitude.toFixed(8);
+      lngEl.value = position.coords.longitude.toFixed(8);
+      accEl.value = Number(position.coords.accuracy || 0).toFixed(2);
+      errEl.value = '';
+      statusEl.textContent = 'GPS location captured.';
+    },
+    function (error) {
+      const messages = {
+        1: 'Location permission denied',
+        2: 'Location unavailable',
+        3: 'Location timeout'
+      };
+      const msg = messages[error.code] || 'Unknown GPS error';
+      errEl.value = msg;
+      statusEl.textContent = 'GPS unavailable: ' + msg;
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000
+    }
+  );
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

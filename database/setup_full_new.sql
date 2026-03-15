@@ -1,13 +1,16 @@
 -- ============================================================
--- Rani Mobiles Sales & Service — ERP Database Schema
+-- Rani Mobiles Sales & Service - Full Fresh Setup SQL
+-- Use this file for a clean new installation.
 -- ============================================================
 
 SET NAMES utf8mb4;
 SET foreign_key_checks = 0;
+SET sql_notes = 0;
 
 -- -------------------------
--- Create database
+-- Reset and create database
 -- -------------------------
+DROP DATABASE IF EXISTS `rani_erp`;
 CREATE DATABASE IF NOT EXISTS `rani_erp` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `rani_erp`;
 
@@ -537,3 +540,4 @@ INSERT INTO `system_settings` (`key_name`,`key_value`) VALUES
 ('login_end_time','21:00');
 
 SET foreign_key_checks = 1;
+SET sql_notes = 1;
