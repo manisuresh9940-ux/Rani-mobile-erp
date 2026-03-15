@@ -197,7 +197,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
 <script>
 let poIndex = 1;
-const selectLabel = '-- <?= addslashes(__('btn_search')) ?> --';
+const selectLabel = <?= json_encode('-- ' . __('btn_search') . ' --', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 const productData = <?= json_encode(array_map(fn($p) => [
     'id'    => $p['id'],
     'label' => $p['name'] . ($p['model'] ? ' - ' . $p['model'] : ''),

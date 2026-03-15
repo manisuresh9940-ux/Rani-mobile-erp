@@ -350,6 +350,6 @@ return [
     'daily_target'       => 'தினசரி இலக்கு',
     'achieved'           => 'அடைந்தது',
     'remaining'          => 'மீதமுள்ளது',
-    'of_target'          => '% இலக்கு',
+    'of_target'          => '% இலக்கு அடைந்தது',
     'no_collection_data' => 'வசூல் தகவல் இல்லை.',
 ];
