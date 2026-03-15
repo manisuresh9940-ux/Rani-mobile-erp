@@ -18,6 +18,11 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
       <a href="<?= BASE_URL ?>/dashboard.php" class="nav-link <?= $currentFile==='dashboard.php'?'active':'' ?>">
         <i class="bi bi-speedometer2 me-2"></i>Dashboard
       </a>
+      <?php if (is_sup() || is_admin()): ?>
+      <a href="<?= BASE_URL ?>/modules/accounts/collection.php" class="nav-link <?= $currentFile==='collection.php'?'active':'' ?>">
+        <i class="bi bi-binoculars me-2"></i>Supervisor View
+      </a>
+      <?php endif; ?>
     </div>
 
     <!-- Sales -->
@@ -49,6 +54,9 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         <a href="<?= BASE_URL ?>/modules/purchase/list.php" class="nav-sublink <?= $currentFile==='list.php'&&$currentDir==='purchase'?'active':'' ?>">
           <i class="bi bi-list-ul me-2"></i>Purchase List
         </a>
+        <a href="<?= BASE_URL ?>/modules/purchase/orders.php" class="nav-sublink <?= $currentFile==='orders.php'&&$currentDir==='purchase'?'active':'' ?>">
+          <i class="bi bi-file-earmark-text me-2"></i>Purchase Orders
+        </a>
       </div>
     </div>
 
@@ -64,6 +72,15 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         </a>
         <a href="<?= BASE_URL ?>/modules/stock/inventory.php" class="nav-sublink <?= $currentFile==='inventory.php'?'active':'' ?>">
           <i class="bi bi-bar-chart me-2"></i>Inventory
+        </a>
+        <a href="<?= BASE_URL ?>/modules/stock/baseline.php" class="nav-sublink <?= $currentFile==='baseline.php'?'active':'' ?>">
+          <i class="bi bi-clipboard-check me-2"></i>Expected Stock
+        </a>
+        <a href="<?= BASE_URL ?>/modules/stock/item_changes.php" class="nav-sublink <?= $currentFile==='item_changes.php'?'active':'' ?>">
+          <i class="bi bi-arrow-repeat me-2"></i>Item Changes
+        </a>
+        <a href="<?= BASE_URL ?>/modules/stock/alerts.php" class="nav-sublink <?= $currentFile==='alerts.php'?'active':'' ?>">
+          <i class="bi bi-bell-fill me-2"></i>Alerts
         </a>
       </div>
     </div>
@@ -137,6 +154,15 @@ function nav_link(string $href, string $icon, string $label, string $currentDir,
         </a>
         <a href="<?= BASE_URL ?>/modules/accounts/closing.php" class="nav-sublink <?= $currentFile==='closing.php'?'active':'' ?>">
           <i class="bi bi-lock me-2"></i>Day Closing
+        </a>
+        <a href="<?= BASE_URL ?>/modules/accounts/day_close.php" class="nav-sublink <?= $currentFile==='day_close.php'?'active':'' ?>">
+          <i class="bi bi-lock-fill me-2"></i>Day Close (New)
+        </a>
+        <a href="<?= BASE_URL ?>/modules/accounts/handover.php" class="nav-sublink <?= $currentFile==='handover.php'?'active':'' ?>">
+          <i class="bi bi-cash me-2"></i>Cash Handover
+        </a>
+        <a href="<?= BASE_URL ?>/modules/accounts/collection.php" class="nav-sublink <?= $currentFile==='collection.php'?'active':'' ?>">
+          <i class="bi bi-collection me-2"></i>Closing &amp; Collection
         </a>
       </div>
     </div>

@@ -8,9 +8,10 @@ require_auth();
 $user      = current_user();
 $branch_id = (int)$user['branch_id'];
 $isAdmin   = is_admin();
+$canSeeAll = can_see_all_branches();
 $pdo       = db();
 
-$fBranch  = $isAdmin ? (int)($_GET['branch'] ?? 0) : $branch_id;
+$fBranch  = $canSeeAll ? (int)($_GET['branch'] ?? 0) : $branch_id;
 $fBrandId = (int)($_GET['brand'] ?? 0);
 $search   = trim($_GET['s'] ?? '');
 $filter   = $_GET['filter'] ?? ''; // 'low', 'out', 'ok'
@@ -18,7 +19,9 @@ $filter   = $_GET['filter'] ?? ''; // 'low', 'out', 'ok'
 $whereP  = ['1=1'];
 $paramsP = [];
 
-if (!$isAdmin) {
+// Always filter to a specific branch unless SUP/Admin viewing all
+if (!$canSeeAll) {
+    // Branch users always see their own branch in primary view
     $whereP[] = 's.branch_id=?';
     $paramsP[] = $branch_id;
 } elseif ($fBranch) {
@@ -111,7 +114,7 @@ $pageTitle = 'Inventory';
 <!-- Filters -->
 <div class="erp-form-card mb-3">
   <form method="GET" class="row g-2 align-items-end">
-    <?php if ($isAdmin): ?>
+    <?php if ($canSeeAll): ?>
     <div class="col-md-2">
       <label class="form-label">Branch</label>
       <select name="branch" class="form-select form-select-sm">
@@ -159,7 +162,7 @@ $pageTitle = 'Inventory';
       <thead>
         <tr>
           <th>#</th><th>Product</th><th>Brand</th>
-          <?php if ($isAdmin && !$fBranch): ?><th>Branch</th><?php endif; ?>
+          <?php if ($canSeeAll && !$fBranch): ?><th>Branch</th><?php endif; ?>
           <th class="text-center">Qty</th>
           <th class="text-center">Min Stock</th>
           <th class="text-end">Cost</th>
@@ -185,13 +188,24 @@ $pageTitle = 'Inventory';
                 <small class="text-muted"><?= clean($s['model'] ?? '') ?></small>
               </td>
               <td><?= clean($s['brand']) ?></td>
-              <?php if ($isAdmin && !$fBranch): ?>
+              <?php if ($canSeeAll && !$fBranch): ?>
                 <td><span class="badge bg-primary"><?= clean($s['branch_code']) ?></span></td>
               <?php endif; ?>
-              <td class="text-center fw-bold <?= $status['class'] ?>"><?= $s['qty'] ?></td>
-              <td class="text-center text-muted"><?= $s['min_stock'] ?></td>
-              <td class="text-end"><?= money((float)$s['purchase_cost']) ?></td>
-              <td class="text-end"><?= money(max(0, (float)$s['qty'] * (float)$s['purchase_cost'])) ?></td>
+              <?php
+                // Branch staff see full detail only for their own branch;
+                // other-branch rows show availability only (no qty, cost, value).
+                $isOwnBranch = $canSeeAll || (int)$s['branch_id'] === $branch_id;
+              ?>
+              <td class="text-center fw-bold <?= $status['class'] ?>">
+                <?php if ($isOwnBranch): ?>
+                  <?= $s['qty'] ?>
+                <?php else: ?>
+                  <span class="text-muted"><?= $s['qty'] > 0 ? 'Available' : 'Not Available' ?></span>
+                <?php endif; ?>
+              </td>
+              <td class="text-center text-muted"><?= $isOwnBranch ? $s['min_stock'] : '-' ?></td>
+              <td class="text-end"><?= $isOwnBranch ? money((float)$s['purchase_cost']) : '-' ?></td>
+              <td class="text-end"><?= $isOwnBranch ? money(max(0, (float)$s['qty'] * (float)$s['purchase_cost'])) : '-' ?></td>
               <td class="text-center <?= $status['class'] ?>"><?= $status['icon'] ?> <?= $status['label'] ?></td>
             </tr>
           <?php endforeach; ?>
