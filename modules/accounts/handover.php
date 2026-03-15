@@ -71,32 +71,32 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <?php endif; ?>
 
   <div class="card mb-3">
-    <div class="card-header fw-bold">Submit New Handover</div>
+    <div class="card-header fw-bold"><?= __('submit_handover') ?></div>
     <div class="card-body">
       <form method="post" class="row g-3">
         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="action" value="add">
         <div class="col-md-4">
-          <label class="form-label">Amount (₹)</label>
+          <label class="form-label"><?= __('amount') ?> (₹)</label>
           <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
         </div>
         <div class="col-md-6">
-          <label class="form-label">Notes</label>
+          <label class="form-label"><?= __('notes') ?></label>
           <input type="text" name="notes" class="form-control">
         </div>
         <div class="col-12">
-          <button class="btn btn-primary">Submit Handover</button>
+          <button class="btn btn-primary"><?= __('btn_submit') ?></button>
         </div>
       </form>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-header fw-bold">Today's Handovers</div>
+    <div class="card-header fw-bold"><?= __('todays_handovers') ?></div>
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
         <thead>
-          <tr><th>Time</th><th>Amount</th><th>By</th><th>Notes</th><th>Status</th><th>Action</th></tr>
+          <tr><th><?= __('date') ?></th><th><?= __('amount') ?></th><th><?= __('handover_by') ?></th><th><?= __('notes') ?></th><th><?= __('status') ?></th><th><?= __('action') ?></th></tr>
         </thead>
         <tbody>
         <?php foreach ($handovers as $h): ?>
@@ -116,7 +116,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="action" value="confirm">
                 <input type="hidden" name="handover_id" value="<?= $h['id'] ?>">
-                <button class="btn btn-sm btn-success">Confirm</button>
+                <button class="btn btn-sm btn-success"><?= __('btn_confirm') ?></button>
               </form>
               <?php else: ?>
                 <?= $h['confirmed_user'] ? clean($h['confirmed_user']) : '-' ?>
@@ -125,7 +125,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
           </tr>
         <?php endforeach; ?>
         <?php if (!$handovers): ?>
-          <tr><td colspan="6" class="text-center text-muted">No handovers yet</td></tr>
+          <tr><td colspan="6" class="text-center text-muted"><?= __('no_handovers') ?></td></tr>
         <?php endif; ?>
         </tbody>
       </table>

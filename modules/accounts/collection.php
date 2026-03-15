@@ -77,42 +77,47 @@ require_once __DIR__ . '/../../includes/sidebar.php';
       <div class="card border-<?= $r['badge'] ?>">
         <div class="card-header bg-<?= $r['badge'] ?> <?= $r['badge'] === 'warning' ? 'text-dark' : 'text-white' ?> d-flex justify-content-between">
           <strong><?= clean($r['branch']['name']) ?></strong>
-          <span class="badge bg-light text-dark"><?= $r['label'] ?></span>
+          <span class="badge bg-light text-dark"><?= match($r['status']) {
+            'NO_SALES'  => __('status_no_sales'),
+            'NOT_GIVEN' => __('status_not_given'),
+            'PARTIAL'   => __('status_partial'),
+            default     => __('status_ok'),
+          } ?></span>
         </div>
         <div class="card-body small">
           <div class="row text-center">
             <div class="col">
               <div class="fw-bold"><?= money($r['sales_total']) ?></div>
-              <div class="text-muted">Sales</div>
+              <div class="text-muted"><?= __('sales_total_label') ?></div>
             </div>
             <div class="col">
               <div class="fw-bold"><?= money($r['counted_cash']) ?></div>
-              <div class="text-muted">Counted Cash</div>
+              <div class="text-muted"><?= __('counted_cash_label') ?></div>
             </div>
             <div class="col">
               <div class="fw-bold text-success"><?= money($r['confirmed']) ?></div>
-              <div class="text-muted">Received</div>
+              <div class="text-muted"><?= __('received_label') ?></div>
             </div>
             <div class="col">
               <div class="fw-bold <?= $r['pending'] > 0 ? 'text-danger' : '' ?>"><?= money($r['pending']) ?></div>
-              <div class="text-muted">Pending</div>
+              <div class="text-muted"><?= __('pending_label') ?></div>
             </div>
           </div>
           <?php if ($r['target'] > 0): ?>
           <div class="mt-2">
-            <small class="text-muted">Target: <?= money($r['target']) ?></small>
+            <small class="text-muted"><?= __('target') ?>: <?= money($r['target']) ?></small>
             <div class="progress mt-1" style="height:6px">
               <?php $pct = $r['target'] > 0 ? min(100, (int)round($r['confirmed'] / $r['target'] * 100)) : 0; ?>
               <div class="progress-bar bg-<?= $pct >= 100 ? 'success' : 'warning' ?>" style="width:<?= $pct ?>%"></div>
             </div>
-            <small class="<?= $r['confirmed'] >= $r['target'] ? 'text-success' : 'text-warning' ?>"><?= $pct ?>% of target</small>
+            <small class="<?= $r['confirmed'] >= $r['target'] ? 'text-success' : 'text-warning' ?>"><?= $pct ?><?= __('of_target') ?></small>
           </div>
           <?php endif; ?>
         </div>
         <?php if ($r['status'] !== 'NO_SALES'): ?>
         <div class="card-footer text-end">
           <a href="<?= BASE_URL ?>/modules/accounts/handover.php?branch=<?= $r['branch']['id'] ?>"
-             class="btn btn-sm btn-outline-primary">View Handovers</a>
+             class="btn btn-sm btn-outline-primary"><?= __('view_handovers') ?></a>
         </div>
         <?php endif; ?>
       </div>

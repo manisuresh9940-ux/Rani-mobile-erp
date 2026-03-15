@@ -97,20 +97,20 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
   <!-- Legend -->
   <div class="mb-2 d-flex flex-wrap gap-2 small">
-    <span class="badge bg-success">OK</span>
-    <span class="badge bg-danger">SHORT</span>
-    <span class="badge bg-warning text-dark">EXCESS</span>
-    <span class="badge bg-secondary">NEW ITEM</span>
-    <span class="badge bg-dark">OUT</span>
-    <span class="badge bg-info text-dark">LOW</span>
+    <span class="badge bg-success"><?= __('status_ok') ?></span>
+    <span class="badge bg-danger"><?= __('status_short') ?></span>
+    <span class="badge bg-warning text-dark"><?= __('status_excess') ?></span>
+    <span class="badge bg-secondary"><?= __('status_new') ?></span>
+    <span class="badge bg-dark"><?= __('status_out') ?></span>
+    <span class="badge bg-info text-dark"><?= __('status_low') ?></span>
   </div>
 
   <div class="table-responsive">
   <table class="table table-sm table-hover align-middle">
     <thead class="table-dark">
       <tr>
-        <th>Item</th><th>Brand</th><th>Qty</th><th>Min</th><th>Max</th><th>Status</th>
-        <?php if (is_sup()): ?><th>Action</th><?php endif; ?>
+        <th><?= __('name') ?></th><th><?= __('brand') ?></th><th><?= __('qty') ?></th><th><?= __('expected_min') ?></th><th><?= __('expected_max') ?></th><th><?= __('status') ?></th>
+        <?php if (is_sup()): ?><th><?= __('action') ?></th><?php endif; ?>
       </tr>
     </thead>
     <tbody>
@@ -147,7 +147,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
               <?= (int)$it['expected_min_qty'] ?>,
               <?= (int)$it['expected_max_qty'] ?>,
               <?= (int)($it['bes_active'] ?? 1) ?>
-            )">Edit</button>
+            )"><?= __('edit_baseline') ?></button>
         </td>
         <?php endif; ?>
       </tr>
@@ -164,7 +164,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Edit Baseline</h5>
+        <h5 class="modal-title"><?= __('edit_baseline') ?></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="post">
@@ -175,23 +175,23 @@ require_once __DIR__ . '/../../includes/sidebar.php';
           <p id="modal_item_name" class="fw-bold"></p>
           <div class="row g-3">
             <div class="col-6">
-              <label class="form-label">Min Qty</label>
+              <label class="form-label"><?= __('expected_min') ?></label>
               <input type="number" min="0" name="expected_min_qty" id="modal_min" class="form-control" required>
             </div>
             <div class="col-6">
-              <label class="form-label">Max Qty</label>
+              <label class="form-label"><?= __('expected_max') ?></label>
               <input type="number" min="0" name="expected_max_qty" id="modal_max" class="form-control" required>
             </div>
             <div class="col-12">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="active" id="modal_active" value="1">
-                <label class="form-check-label" for="modal_active">Active</label>
+                <label class="form-check-label" for="modal_active"><?= __('status_active') ?></label>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="submit" class="btn btn-primary"><?= __('btn_save') ?></button>
         </div>
       </form>
     </div>

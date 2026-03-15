@@ -156,20 +156,20 @@ $pageTitle = 'Dashboard';
 <!-- Page heading -->
 <div class="page-header">
   <div>
-    <h1 class="page-title"><i class="bi bi-speedometer2 me-2"></i>Business Control Center</h1>
+    <h1 class="page-title"><i class="bi bi-speedometer2 me-2"></i><?= __('dashboard_title') ?></h1>
     <p class="page-subtitle">
       <?= date('l, d F Y') ?>
       &nbsp;·&nbsp;
       <?= clean($user['branch']) ?> Branch
-      <?= $isAdmin ? '&nbsp;·&nbsp;<span class="badge bg-danger">Admin View</span>' : '' ?>
+      <?= $isAdmin ? '&nbsp;·&nbsp;<span class="badge bg-danger">' . __('admin_view') . '</span>' : '' ?>
     </p>
   </div>
   <div class="d-flex gap-2">
     <a href="<?= BASE_URL ?>/modules/sales/pos.php" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-circle me-1"></i>New Sale
+      <i class="bi bi-plus-circle me-1"></i><?= __('new_sale') ?>
     </a>
     <a href="<?= BASE_URL ?>/modules/reports/sales.php" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-bar-chart me-1"></i>Reports
+      <i class="bi bi-bar-chart me-1"></i><?= __('reports') ?>
     </a>
   </div>
 </div>
@@ -180,42 +180,42 @@ $pageTitle = 'Dashboard';
     <div class="kpi-card kpi-sales">
       <div class="kpi-icon"><i class="bi bi-bag-check"></i></div>
       <div class="kpi-value"><?= money($todaySales) ?></div>
-      <div class="kpi-label">Today Sales</div>
+      <div class="kpi-label"><?= __('today_sales') ?></div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-purchase">
       <div class="kpi-icon"><i class="bi bi-truck"></i></div>
       <div class="kpi-value"><?= money($todayPurchase) ?></div>
-      <div class="kpi-label">Today Purchase</div>
+      <div class="kpi-label"><?= __('today_purchase') ?></div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-profit">
       <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
       <div class="kpi-value"><?= money($todayProfit) ?></div>
-      <div class="kpi-label">Today Profit</div>
+      <div class="kpi-label"><?= __('today_profit') ?></div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-cash">
       <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
       <div class="kpi-value"><?= money($cashBalance) ?></div>
-      <div class="kpi-label">Cash Balance</div>
+      <div class="kpi-label"><?= __('cash_balance') ?></div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-stock">
       <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
       <div class="kpi-value"><?= money($stockValue) ?></div>
-      <div class="kpi-label">Stock Value</div>
+      <div class="kpi-label"><?= __('stock_value') ?></div>
     </div>
   </div>
   <div class="col-6 col-md-4 col-xl-2 fade-in-up">
     <div class="kpi-card kpi-low">
       <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
       <div class="kpi-value"><?= $lowStockCount ?></div>
-      <div class="kpi-label">Low Stock Items</div>
+      <div class="kpi-label"><?= __('low_stock_items') ?></div>
     </div>
   </div>
 </div>
@@ -225,14 +225,14 @@ $pageTitle = 'Dashboard';
   <!-- Daily Sales Chart -->
   <div class="col-lg-8">
     <div class="chart-card">
-      <div class="chart-title"><i class="bi bi-bar-chart-line me-2"></i>Sales — Last 7 Days</div>
+      <div class="chart-title"><i class="bi bi-bar-chart-line me-2"></i><?= __('sales_last7') ?></div>
       <div id="dailySalesChart"></div>
     </div>
   </div>
   <!-- Branch Comparison -->
   <div class="col-lg-4">
     <div class="chart-card">
-      <div class="chart-title"><i class="bi bi-shop me-2"></i>Today Branch Comparison</div>
+      <div class="chart-title"><i class="bi bi-shop me-2"></i><?= __('branch_comparison') ?></div>
       <div id="branchChart"></div>
     </div>
   </div>
@@ -243,10 +243,10 @@ $pageTitle = 'Dashboard';
   <!-- Low Stock Alerts -->
   <div class="col-lg-4">
     <div class="chart-card h-100">
-      <div class="chart-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Low / Out of Stock</div>
+      <div class="chart-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i><?= __('low_out_stock') ?></div>
       <?php if (empty($lowItems)): ?>
         <div class="text-center text-muted py-3">
-          <i class="bi bi-check-circle text-success fs-2"></i><br>All stock levels OK
+          <i class="bi bi-check-circle text-success fs-2"></i><br><?= __('all_stock_ok') ?>
         </div>
       <?php else: ?>
         <?php foreach ($lowItems as $item): ?>
@@ -256,20 +256,20 @@ $pageTitle = 'Dashboard';
             </div>
             <div>
               <div class="fw-semibold"><?= clean($item['brand']) ?> <?= clean($item['name']) ?></div>
-              <div class="text-muted">Qty: <strong><?= $item['qty'] ?></strong> | Min: <?= $item['min_stock'] ?></div>
+              <div class="text-muted"><?= __('qty') ?>: <strong><?= $item['qty'] ?></strong> | <?= __('min_stock') ?>: <?= $item['min_stock'] ?></div>
             </div>
           </div>
         <?php endforeach; ?>
       <?php endif; ?>
 
       <?php if (!empty($deadStock)): ?>
-        <div class="chart-title text-warning mt-3"><i class="bi bi-hourglass me-2"></i>Dead Stock (45+ days)</div>
+        <div class="chart-title text-warning mt-3"><i class="bi bi-hourglass me-2"></i><?= __('dead_stock') ?></div>
         <?php foreach ($deadStock as $ds): ?>
           <div class="alert-item">
             <div><i class="bi bi-phone text-secondary"></i></div>
             <div>
               <div class="fw-semibold"><?= clean($ds['brand']) ?> <?= clean($ds['name']) ?></div>
-              <div class="text-muted">No sale for <strong><?= (int)($ds['days_no_sale'] ?? 99) ?></strong> days</div>
+              <div class="text-muted"><?= (int)($ds['days_no_sale'] ?? 99) ?> <?= __('days_no_sale') ?></div>
             </div>
           </div>
         <?php endforeach; ?>
@@ -281,27 +281,27 @@ $pageTitle = 'Dashboard';
   <div class="col-lg-8">
     <div class="erp-table">
       <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
-        <strong><i class="bi bi-receipt me-2"></i>Recent Sales</strong>
-        <a href="<?= BASE_URL ?>/modules/sales/list.php" class="btn btn-outline-primary btn-sm">View All</a>
+        <strong><i class="bi bi-receipt me-2"></i><?= __('recent_sales') ?></strong>
+        <a href="<?= BASE_URL ?>/modules/sales/list.php" class="btn btn-outline-primary btn-sm"><?= __('view_all') ?></a>
       </div>
       <table class="table table-hover mb-0">
         <thead>
           <tr>
-            <th>Invoice</th>
-            <th>Customer</th>
-            <th>Branch</th>
-            <th>Date</th>
-            <th class="text-end">Amount</th>
+            <th><?= __('invoice') ?></th>
+            <th><?= __('customer') ?></th>
+            <th><?= __('branch') ?></th>
+            <th><?= __('date') ?></th>
+            <th class="text-end"><?= __('amount') ?></th>
           </tr>
         </thead>
         <tbody>
           <?php if (empty($recentSales)): ?>
-            <tr><td colspan="5" class="text-center text-muted py-3">No sales today</td></tr>
+            <tr><td colspan="5" class="text-center text-muted py-3"><?= __('no_sales_today') ?></td></tr>
           <?php else: ?>
             <?php foreach ($recentSales as $s): ?>
               <tr>
                 <td><code><?= clean($s['invoice_no']) ?></code></td>
-                <td><?= clean($s['customer_name'] ?: 'Walk-in') ?></td>
+                <td><?= clean($s['customer_name'] ?: __('walk_in')) ?></td>
                 <td><span class="badge bg-primary"><?= clean($s['branch']) ?></span></td>
                 <td><?= fmt_date($s['sale_date']) ?></td>
                 <td class="text-end fw-semibold"><?= money((float)$s['total']) ?></td>
@@ -319,7 +319,7 @@ $pageTitle = 'Dashboard';
   // ── Daily Sales Chart ──────────────────────────────────────
   const salesOpts = {
     chart: { type: 'area', height: 240, toolbar: { show: false }, animations: { enabled: true } },
-    series: [{ name: 'Sales', data: <?= json_encode($daySales) ?> }],
+    series: [{ name: '<?= addslashes(__('nav_sales')) ?>', data: <?= json_encode($daySales) ?> }],
     xaxis: { categories: <?= json_encode($days) ?> },
     yaxis: { labels: { formatter: v => '₹' + v.toLocaleString('en-IN') } },
     dataLabels: { enabled: false },
@@ -347,7 +347,7 @@ $pageTitle = 'Dashboard';
   };
   new ApexCharts(document.getElementById('branchChart'), branchOpts).render();
   <?php else: ?>
-  document.getElementById('branchChart').innerHTML = '<div class="text-center text-muted py-5">Branch comparison available for Admin only</div>';
+  document.getElementById('branchChart').innerHTML = '<div class="text-center text-muted py-5"><?= addslashes(__('branch_comparison_admin_only')) ?></div>';
   <?php endif; ?>
 })();
 </script>

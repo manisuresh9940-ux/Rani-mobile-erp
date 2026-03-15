@@ -57,8 +57,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <table class="table table-sm align-middle">
     <thead class="table-dark">
       <tr>
-        <th>Date</th><th>Branch</th><th>Item</th><th>Substitute For</th>
-        <th>Requested By</th><th>Status</th><th>Notes</th><th>Action</th>
+        <th><?= __('date') ?></th><th><?= __('branch') ?></th><th><?= __('name') ?></th><th><?= __('substitute_for') ?></th>
+        <th><?= __('requested_by') ?></th><th><?= __('status') ?></th><th><?= __('owner_notes') ?></th><th><?= __('action') ?></th>
       </tr>
     </thead>
     <tbody>
@@ -83,16 +83,16 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="request_id" value="<?= $r['id'] ?>">
             <input type="text" name="owner_notes" class="form-control form-control-sm d-inline w-auto"
-                   placeholder="Notes (optional)">
-            <button name="action" value="approve" class="btn btn-sm btn-success ms-1">✓ Approve</button>
-            <button name="action" value="reject"  class="btn btn-sm btn-danger ms-1">✗ Reject</button>
+                   placeholder="<?= __('notes') ?>">
+            <button name="action" value="approve" class="btn btn-sm btn-success ms-1">✓ <?= __('btn_approve') ?></button>
+            <button name="action" value="reject"  class="btn btn-sm btn-danger ms-1">✗ <?= __('btn_reject') ?></button>
           </form>
           <?php endif; ?>
         </td>
       </tr>
     <?php endforeach; ?>
     <?php if (!$reqs): ?>
-      <tr><td colspan="8" class="text-center text-muted py-4">No requests</td></tr>
+      <tr><td colspan="8" class="text-center text-muted py-4"><?= __('no_requests') ?></td></tr>
     <?php endif; ?>
     </tbody>
   </table>

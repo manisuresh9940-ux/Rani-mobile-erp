@@ -200,7 +200,7 @@ $pageTitle = 'Inventory';
                 <?php if ($isOwnBranch): ?>
                   <?= $s['qty'] ?>
                 <?php else: ?>
-                  <span class="text-muted"><?= $s['qty'] > 0 ? 'Available' : 'Not Available' ?></span>
+                  <span class="text-muted"><?= $s['qty'] > 0 ? __('available') : __('not_available') ?></span>
                 <?php endif; ?>
               </td>
               <td class="text-center text-muted"><?= $isOwnBranch ? $s['min_stock'] : '-' ?></td>

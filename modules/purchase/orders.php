@@ -70,9 +70,9 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="content-wrapper">
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Purchase Orders</h4>
+    <h4 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i><?= __('purchase_orders_title') ?></h4>
     <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#createPO">
-      <i class="bi bi-plus"></i> New PO
+      <i class="bi bi-plus"></i> <?= __('new_po') ?>
     </button>
   </div>
 
@@ -86,27 +86,27 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <!-- Create PO form -->
   <div class="collapse mb-3" id="createPO">
     <div class="card">
-      <div class="card-header fw-bold">Create Purchase Order</div>
+      <div class="card-header fw-bold"><?= __('create_po') ?></div>
       <div class="card-body">
         <form method="post">
           <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <input type="hidden" name="action" value="create">
           <div class="row g-3 mb-3">
             <div class="col-md-4">
-              <label class="form-label">Vendor</label>
+              <label class="form-label"><?= __('vendor') ?></label>
               <select name="vendor_id" class="form-select">
-                <option value="">-- Select --</option>
+                <option value="">-- <?= __('btn_search') ?> --</option>
                 <?php foreach ($vendors as $v): ?>
                   <option value="<?= $v['id'] ?>"><?= clean($v['name']) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Expected Delivery</label>
+              <label class="form-label"><?= __('expected_date') ?></label>
               <input type="date" name="expected_date" class="form-control">
             </div>
             <div class="col-md-5">
-              <label class="form-label">Notes</label>
+              <label class="form-label"><?= __('notes') ?></label>
               <input type="text" name="notes" class="form-control">
             </div>
           </div>
@@ -114,29 +114,29 @@ require_once __DIR__ . '/../../includes/sidebar.php';
           <div id="poItems">
             <div class="row g-2 align-items-end mb-2 po-item-row">
               <div class="col-md-5">
-                <label class="form-label">Item</label>
+                <label class="form-label"><?= __('name') ?></label>
                 <select name="items[0][item_id]" class="form-select">
-                  <option value="">-- Select --</option>
+                  <option value="">-- <?= __('btn_search') ?> --</option>
                   <?php foreach ($products as $p): ?>
                     <option value="<?= $p['id'] ?>"><?= clean($p['name']) ?><?= $p['model'] ? ' - ' . clean($p['model']) : '' ?></option>
                   <?php endforeach; ?>
                 </select>
               </div>
               <div class="col-md-2">
-                <label class="form-label">Qty</label>
+                <label class="form-label"><?= __('qty') ?></label>
                 <input type="number" min="1" name="items[0][qty]" class="form-control" value="1">
               </div>
               <div class="col-md-3">
-                <label class="form-label">Est. Cost (₹)</label>
+                <label class="form-label"><?= __('est_cost') ?></label>
                 <input type="number" step="0.01" min="0" name="items[0][est_cost]" class="form-control" value="0">
               </div>
             </div>
           </div>
 
           <button type="button" onclick="addPORow()" class="btn btn-outline-secondary btn-sm mb-3">
-            <i class="bi bi-plus"></i> Add Item
+            <i class="bi bi-plus"></i> <?= __('add_item_row') ?>
           </button>
-          <div><button class="btn btn-primary">Create PO</button></div>
+          <div><button class="btn btn-primary"><?= __('create_po') ?></button></div>
         </form>
       </div>
     </div>
@@ -147,9 +147,9 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <table class="table table-sm table-hover align-middle">
     <thead class="table-dark">
       <tr>
-        <th>PO No</th>
-        <?php if (can_see_all_branches()): ?><th>Branch</th><?php endif; ?>
-        <th>Vendor</th><th>Date</th><th>Expected</th><th>Status</th><th>Action</th>
+        <th><?= __('po_no') ?></th>
+        <?php if (can_see_all_branches()): ?><th><?= __('branch') ?></th><?php endif; ?>
+        <th><?= __('vendor') ?></th><th><?= __('date') ?></th><th><?= __('expected_date') ?></th><th><?= __('status') ?></th><th><?= __('action') ?></th>
       </tr>
     </thead>
     <tbody>
@@ -187,7 +187,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
       </tr>
     <?php endforeach; ?>
     <?php if (!$orders): ?>
-      <tr><td colspan="7" class="text-center text-muted py-4">No POs found</td></tr>
+      <tr><td colspan="7" class="text-center text-muted py-4"><?= __('no_po_found') ?></td></tr>
     <?php endif; ?>
     </tbody>
   </table>
@@ -197,6 +197,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
 <script>
 let poIndex = 1;
+const selectLabel = '-- <?= addslashes(__('btn_search')) ?> --';
 const productData = <?= json_encode(array_map(fn($p) => [
     'id'    => $p['id'],
     'label' => $p['name'] . ($p['model'] ? ' - ' . $p['model'] : ''),
@@ -210,14 +211,14 @@ function addPORow() {
   d.innerHTML = `
     <div class="col-md-5">
       <select name="items[${poIndex}][item_id]" class="form-select">
-        <option value="">-- Select --</option>${productOptions}
+        <option value="">${selectLabel}</option>${productOptions}
       </select>
     </div>
     <div class="col-md-2">
-      <input type="number" min="1" name="items[${poIndex}][qty]" class="form-control" value="1">
+      <input type="number" min="1" name="items[${poIndex}][qty]" class="form-control" value="1" placeholder="<?= __('qty') ?>">
     </div>
     <div class="col-md-3">
-      <input type="number" step="0.01" min="0" name="items[${poIndex}][est_cost]" class="form-control" value="0">
+      <input type="number" step="0.01" min="0" name="items[${poIndex}][est_cost]" class="form-control" value="0" placeholder="<?= __('est_cost') ?>">
     </div>
     <div class="col-md-1">
       <button type="button" class="btn btn-outline-danger btn-sm"

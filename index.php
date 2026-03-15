@@ -50,21 +50,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ' . BASE_URL . '/dashboard.php');
             exit;
         } else {
-            $error = 'Invalid username or password.';
+            $error = __('login_error_invalid');
         }
     } else {
-        $error = 'Please enter username and password.';
+        $error = __('login_error_empty');
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php $__lang = $_SESSION['lang'] ?? 'en'; echo $__lang === 'ta' ? 'ta' : 'en'; ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Login — Rani Mobiles ERP</title>
+<title><?= __('login_title') ?> — <?= __('app_name') ?></title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">
+<!-- Google Font: Noto Sans Tamil for Tamil script rendering -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap">
 <style>
   body {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -133,8 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="login-card text-center text-white">
   <div class="brand-logo">📱</div>
-  <h4 class="fw-bold mb-1">Rani Mobiles ERP</h4>
-  <p class="text-white-50 mb-4">Sales &amp; Service Management</p>
+  <h4 class="fw-bold mb-1"><?= __('app_name') ?></h4>
+  <p class="text-white-50 mb-4"><?= __('app_subtitle') ?></p>
 
   <?php if ($error): ?>
     <div class="alert alert-danger alert-dismissible py-2" role="alert">
@@ -147,23 +150,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="mb-3">
       <div class="input-group">
         <span class="input-group-text"><i class="bi bi-person"></i></span>
-        <input type="text" name="username" class="form-control" placeholder="Username" required autofocus>
+        <input type="text" name="username" class="form-control" placeholder="<?= __('login_username') ?>" required autofocus>
       </div>
     </div>
     <div class="mb-4">
       <div class="input-group">
         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-        <input type="password" name="password" id="passwordInput" class="form-control" placeholder="Password" required>
+        <input type="password" name="password" id="passwordInput" class="form-control" placeholder="<?= __('login_password') ?>" required>
         <button type="button" class="btn btn-outline-secondary" onclick="togglePwd()" style="border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.6)">
           <i class="bi bi-eye" id="eyeIcon"></i>
         </button>
       </div>
     </div>
     <button type="submit" class="btn btn-login btn-primary w-100">
-      <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+      <i class="bi bi-box-arrow-in-right me-2"></i><?= __('login_btn') ?>
     </button>
   </form>
-  <p class="mt-3 text-white-50 small">Default: admin / Admin@1234</p>
+  <p class="mt-3 text-white-50 small"><?= __('login_default_hint') ?></p>
+  <div class="mt-2">
+    <a href="<?= BASE_URL ?>/api/set_lang.php?lang=en" class="text-white-50 small me-2 <?= current_lang()==='en'?'fw-bold':'' ?>">English</a>
+    <a href="<?= BASE_URL ?>/api/set_lang.php?lang=ta" class="text-white-50 small <?= current_lang()==='ta'?'fw-bold':'' ?>">தமிழ்</a>
+  </div>
 </div>
 <script>
 function togglePwd() {

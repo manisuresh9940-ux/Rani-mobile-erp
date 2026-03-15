@@ -123,6 +123,54 @@ function require_sup(): void {
     }
 }
 
+// ── Language / i18n ─────────────────────────────────────────────────────────
+
+/**
+ * Load the correct language strings array.
+ * Checks $_SESSION['lang'], then defaults to 'en'.
+ */
+function load_lang(): array {
+    $lang = $_SESSION['lang'] ?? 'en';
+    if (!in_array($lang, ['en', 'ta'])) $lang = 'en';
+    $file = __DIR__ . '/../lang/' . $lang . '.php';
+    return file_exists($file) ? require $file : [];
+}
+
+/**
+ * Translate a key. Falls back to English, then to the key itself.
+ *
+ * @param string $key  Translation key
+ * @param array  $vars Optional sprintf replacements
+ */
+function __(string $key, array $vars = []): string {
+    static $strings = null;
+    static $en      = null;
+    if ($strings === null) {
+        $strings = load_lang();
+        $en_file = __DIR__ . '/../lang/en.php';
+        $en = file_exists($en_file) ? require $en_file : [];
+    }
+    $val = $strings[$key] ?? $en[$key] ?? $key;
+    return $vars ? vsprintf($val, $vars) : $val;
+}
+
+/**
+ * Set language (stores in session).
+ * Returns the new lang code.
+ */
+function set_lang(string $lang): string {
+    $lang = in_array($lang, ['en', 'ta']) ? $lang : 'en';
+    $_SESSION['lang'] = $lang;
+    return $lang;
+}
+
+/**
+ * Get current language code.
+ */
+function current_lang(): string {
+    return $_SESSION['lang'] ?? 'en';
+}
+
 /**
  * Heartbeat: update user presence table.
  */

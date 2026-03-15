@@ -8,15 +8,18 @@ $pageTitle = $pageTitle ?? 'Dashboard';
 $user = current_user();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= current_lang() === 'ta' ? 'ta' : 'en' ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= clean($pageTitle) ?> — Rani Mobiles ERP</title>
+<title><?= clean($pageTitle) ?> — <?= __('app_name') ?></title>
 <!-- Bootstrap 5 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <!-- Bootstrap Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">
+<!-- Google Font: Noto Sans Tamil for Tamil script rendering -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap">
 <!-- Custom CSS -->
 <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
@@ -30,7 +33,7 @@ $user = current_user();
 
   <a class="navbar-brand d-flex align-items-center gap-2" href="<?= BASE_URL ?>/dashboard.php">
     <span class="brand-icon">📱</span>
-    <span class="fw-bold">Rani Mobiles ERP</span>
+    <span class="fw-bold"><?= __('app_name') ?></span>
   </a>
 
   <div class="ms-auto d-flex align-items-center gap-3">
@@ -39,6 +42,19 @@ $user = current_user();
       <i class="bi bi-shop me-1"></i><?= clean($user['branch']) ?>
     </span>
 
+    <!-- Language toggle -->
+    <div class="dropdown">
+      <button class="btn btn-link text-white d-flex align-items-center gap-1 px-1" data-bs-toggle="dropdown" title="<?= __('language') ?>">
+        <span class="fw-bold small"><?= current_lang() === 'ta' ? 'த' : 'EN' ?></span>
+        <i class="bi bi-translate"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+        <li><h6 class="dropdown-header"><?= __('language') ?></h6></li>
+        <li><a class="dropdown-item <?= current_lang()==='en'?'active':'' ?>" href="<?= BASE_URL ?>/api/set_lang.php?lang=en">🇬🇧 English</a></li>
+        <li><a class="dropdown-item <?= current_lang()==='ta'?'active':'' ?>" href="<?= BASE_URL ?>/api/set_lang.php?lang=ta">🇮🇳 தமிழ்</a></li>
+      </ul>
+    </div>
+
     <!-- Notification bell -->
     <div class="dropdown">
       <button class="btn btn-link text-white position-relative" data-bs-toggle="dropdown">
@@ -46,8 +62,8 @@ $user = current_user();
         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notif-badge" id="notifCount" style="display:none">0</span>
       </button>
       <ul class="dropdown-menu dropdown-menu-end shadow-lg" id="notifDropdown" style="min-width:300px;max-height:400px;overflow-y:auto">
-        <li class="dropdown-header fw-bold py-2 px-3">Alerts</li>
-        <li><div class="px-3 py-2 text-muted small" id="notifList">Loading…</div></li>
+        <li class="dropdown-header fw-bold py-2 px-3"><?= __('alerts') ?></li>
+        <li><div class="px-3 py-2 text-muted small" id="notifList"><?= __('loading') ?></div></li>
       </ul>
     </div>
 
@@ -60,9 +76,9 @@ $user = current_user();
       </button>
       <ul class="dropdown-menu dropdown-menu-end shadow-lg">
         <li><h6 class="dropdown-header"><?= clean($user['role']) ?></h6></li>
-        <li><a class="dropdown-item" href="<?= BASE_URL ?>/modules/settings/profile.php"><i class="bi bi-person me-2"></i>My Profile</a></li>
+        <li><a class="dropdown-item" href="<?= BASE_URL ?>/modules/settings/profile.php"><i class="bi bi-person me-2"></i><?= __('nav_my_profile') ?></a></li>
         <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+        <li><a class="dropdown-item text-danger" href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i><?= __('nav_logout') ?></a></li>
       </ul>
     </div>
   </div>

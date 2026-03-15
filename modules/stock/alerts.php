@@ -49,9 +49,9 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
   <div class="mb-3 d-flex flex-wrap gap-2">
     <a href="?status=OPEN"
-       class="btn btn-sm <?= $filterStatus === 'OPEN' ? 'btn-danger' : 'btn-outline-danger' ?>">Open</a>
+       class="btn btn-sm <?= $filterStatus === 'OPEN' ? 'btn-danger' : 'btn-outline-danger' ?>"><?= __('status_open') ?></a>
     <a href="?status=CLOSED"
-       class="btn btn-sm <?= $filterStatus === 'CLOSED' ? 'btn-secondary' : 'btn-outline-secondary' ?>">Closed</a>
+       class="btn btn-sm <?= $filterStatus === 'CLOSED' ? 'btn-secondary' : 'btn-outline-secondary' ?>"><?= __('status_closed') ?></a>
     <?php foreach (['COLLECTION_TARGET_REMAINING','PAYMENT_NOT_GIVEN','VENDOR_DUE','UNSOLD_NEW_STOCK','SHORT','EXCESS','NEW_ITEM','ITEM_CHANGED'] as $t): ?>
       <a href="?status=<?= $filterStatus ?>&type=<?= $t ?>"
          class="btn btn-sm btn-outline-secondary <?= $filterType == $t ? 'active' : '' ?>"><?= $t ?></a>
@@ -61,7 +61,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <div class="table-responsive">
   <table class="table table-sm align-middle">
     <thead class="table-dark">
-      <tr><th>Date</th><th>Branch</th><th>Type</th><th>Severity</th><th>Message</th><th>Status</th><th>Action</th></tr>
+      <tr><th><?= __('date') ?></th><th><?= __('branch') ?></th><th><?= __('alert_type') ?></th><th><?= __('severity') ?></th><th><?= __('message') ?></th><th><?= __('status') ?></th><th><?= __('action') ?></th></tr>
     </thead>
     <tbody>
     <?php foreach ($alerts as $a):
@@ -88,14 +88,14 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="close">
             <input type="hidden" name="alert_id" value="<?= $a['id'] ?>">
-            <button class="btn btn-sm btn-outline-success">Dismiss</button>
+            <button class="btn btn-sm btn-outline-success"><?= __('btn_dismiss') ?></button>
           </form>
           <?php endif; ?>
         </td>
       </tr>
     <?php endforeach; ?>
     <?php if (!$alerts): ?>
-      <tr><td colspan="7" class="text-center text-muted py-4">No alerts</td></tr>
+      <tr><td colspan="7" class="text-center text-muted py-4"><?= __('no_alerts') ?></td></tr>
     <?php endif; ?>
     </tbody>
   </table>

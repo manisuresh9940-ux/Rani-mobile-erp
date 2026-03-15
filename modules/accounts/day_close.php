@@ -100,52 +100,52 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
   <?php if ($closeRecord && $closeRecord['status'] === 'CLOSED'): ?>
     <div class="alert alert-info">
-      <strong>Day is CLOSED.</strong>
-      Counted Cash: <?= money((float)$closeRecord['counted_cash']) ?> &nbsp;|&nbsp;
-      Variance: <?= money((float)$closeRecord['variance']) ?> &nbsp;|&nbsp;
-      Sales Total: <?= money((float)$closeRecord['sales_total']) ?>
+      <strong><?= __('day_closed') ?></strong>
+      <?= __('counted_cash') ?>: <?= money((float)$closeRecord['counted_cash']) ?> &nbsp;|&nbsp;
+      <?= __('variance') ?>: <?= money((float)$closeRecord['variance']) ?> &nbsp;|&nbsp;
+      <?= __('sales_total') ?>: <?= money((float)$closeRecord['sales_total']) ?>
       <?php if (is_sup()): ?>
         <form method="post" class="d-inline ms-3">
           <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <input type="hidden" name="action" value="reopen">
-          <button class="btn btn-sm btn-warning">Reopen</button>
+          <button class="btn btn-sm btn-warning"><?= __('reopen_day') ?></button>
         </form>
       <?php endif; ?>
     </div>
   <?php else: ?>
   <div class="card mb-3">
-    <div class="card-header fw-bold">Close Today's Books</div>
+    <div class="card-header fw-bold"><?= __('day_close_title') ?></div>
     <div class="card-body">
       <form method="post">
         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="action" value="close">
         <div class="row g-3">
           <div class="col-md-3">
-            <label class="form-label">Counted Cash (₹)</label>
+            <label class="form-label"><?= __('counted_cash') ?></label>
             <input type="number" step="0.01" min="0" name="counted_cash" class="form-control"
                    value="<?= $closeRecord ? $closeRecord['counted_cash'] : '' ?>" required>
           </div>
           <div class="col-md-3">
-            <label class="form-label">UPI Total (₹)</label>
+            <label class="form-label"><?= __('upi_total') ?></label>
             <input type="number" step="0.01" min="0" name="upi_total" class="form-control"
                    value="<?= $closeRecord ? $closeRecord['upi_total'] : '' ?>">
           </div>
           <div class="col-md-3">
-            <label class="form-label">Card Total (₹)</label>
+            <label class="form-label"><?= __('card_total') ?></label>
             <input type="number" step="0.01" min="0" name="card_total" class="form-control"
                    value="<?= $closeRecord ? $closeRecord['card_total'] : '' ?>">
           </div>
           <div class="col-md-3">
-            <label class="form-label">Credit Total (₹)</label>
+            <label class="form-label"><?= __('credit_total') ?></label>
             <input type="number" step="0.01" min="0" name="credit_total" class="form-control"
                    value="<?= $closeRecord ? $closeRecord['credit_total'] : '' ?>">
           </div>
           <div class="col-12">
-            <label class="form-label">Notes</label>
+            <label class="form-label"><?= __('notes') ?></label>
             <textarea name="notes" class="form-control" rows="2"><?= $closeRecord ? clean($closeRecord['notes']) : '' ?></textarea>
           </div>
         </div>
-        <button class="btn btn-primary mt-3">Close Day</button>
+        <button class="btn btn-primary mt-3"><?= __('close_day') ?></button>
       </form>
     </div>
   </div>
@@ -154,15 +154,15 @@ require_once __DIR__ . '/../../includes/sidebar.php';
   <!-- Handover summary -->
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <span class="fw-bold">Cash Handovers Today</span>
+      <span class="fw-bold"><?= __('todays_handovers') ?></span>
       <a href="<?= BASE_URL ?>/modules/accounts/handover.php" class="btn btn-sm btn-outline-primary">
-        <i class="bi bi-plus"></i> New Handover
+        <i class="bi bi-plus"></i> <?= __('submit_handover') ?>
       </a>
     </div>
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
         <thead>
-          <tr><th>Time</th><th>Amount</th><th>By</th><th>Status</th><th>Confirmed By</th></tr>
+          <tr><th><?= __('date') ?></th><th><?= __('amount') ?></th><th><?= __('handover_by') ?></th><th><?= __('status') ?></th><th><?= __('confirmed_by') ?></th></tr>
         </thead>
         <tbody>
         <?php foreach ($handovers as $h): ?>
@@ -179,17 +179,17 @@ require_once __DIR__ . '/../../includes/sidebar.php';
           </tr>
         <?php endforeach; ?>
         <?php if (!$handovers): ?>
-          <tr><td colspan="5" class="text-center text-muted">No handovers yet today</td></tr>
+          <tr><td colspan="5" class="text-center text-muted"><?= __('no_handovers') ?></td></tr>
         <?php endif; ?>
         </tbody>
       </table>
     </div>
     <?php if ($closeRecord): ?>
     <div class="card-footer small">
-      <strong>Counted Cash:</strong> <?= money((float)$closeRecord['counted_cash']) ?> &nbsp;|&nbsp;
-      <strong>Confirmed Received:</strong> <?= money($confirmedTotal) ?> &nbsp;|&nbsp;
+      <strong><?= __('counted_cash_label') ?>:</strong> <?= money((float)$closeRecord['counted_cash']) ?> &nbsp;|&nbsp;
+      <strong><?= __('received_label') ?>:</strong> <?= money($confirmedTotal) ?> &nbsp;|&nbsp;
       <strong class="<?= $pendingHandover > 0 ? 'text-danger' : 'text-success' ?>">
-        Pending: <?= money($pendingHandover) ?>
+        <?= __('pending_label') ?>: <?= money($pendingHandover) ?>
       </strong>
     </div>
     <?php endif; ?>
