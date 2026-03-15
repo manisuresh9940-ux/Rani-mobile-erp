@@ -196,7 +196,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </div>
 
 <script>
-let poIdx = 1;
+let poIndex = 1;
 const productData = <?= json_encode(array_map(fn($p) => [
     'id'    => $p['id'],
     'label' => $p['name'] . ($p['model'] ? ' - ' . $p['model'] : ''),
@@ -209,22 +209,22 @@ function addPORow() {
   d.className = 'row g-2 align-items-end mb-2 po-item-row';
   d.innerHTML = `
     <div class="col-md-5">
-      <select name="items[${poIdx}][item_id]" class="form-select">
+      <select name="items[${poIndex}][item_id]" class="form-select">
         <option value="">-- Select --</option>${productOptions}
       </select>
     </div>
     <div class="col-md-2">
-      <input type="number" min="1" name="items[${poIdx}][qty]" class="form-control" value="1">
+      <input type="number" min="1" name="items[${poIndex}][qty]" class="form-control" value="1">
     </div>
     <div class="col-md-3">
-      <input type="number" step="0.01" min="0" name="items[${poIdx}][est_cost]" class="form-control" value="0">
+      <input type="number" step="0.01" min="0" name="items[${poIndex}][est_cost]" class="form-control" value="0">
     </div>
     <div class="col-md-1">
       <button type="button" class="btn btn-outline-danger btn-sm"
               onclick="this.closest('.po-item-row').remove()">✕</button>
     </div>`;
   document.getElementById('poItems').appendChild(d);
-  poIdx++;
+  poIndex++;
 }
 </script>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

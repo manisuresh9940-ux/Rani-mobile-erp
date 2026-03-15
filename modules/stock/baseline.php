@@ -203,7 +203,7 @@ function openBaseline(id, name, min_qty, max_qty, active) {
   document.getElementById('modal_item_name').textContent = name;
   document.getElementById('modal_min').value = min_qty;
   document.getElementById('modal_max').value = max_qty;
-  document.getElementById('modal_active').checked = active == 1;
+  document.getElementById('modal_active').checked = active === 1;
   new bootstrap.Modal(document.getElementById('baselineModal')).show();
 }
 </script>

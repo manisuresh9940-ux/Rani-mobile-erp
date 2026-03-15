@@ -7,8 +7,10 @@
 require_once __DIR__ . '/../config/auth.php';
 header('Content-Type: application/json');
 
+// Support both session-based (web) and token-based (APK) authentication.
+// Token auth is stateless: we build a temporary $tokenUser array without touching $_SESSION.
+$tokenUser = null;
 if (empty($_SESSION['user_id'])) {
-    // Try token auth for APK
     $token = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? '';
     if (!$token) {
         http_response_code(401);
@@ -17,7 +19,7 @@ if (empty($_SESSION['user_id'])) {
     }
     $pdo = db();
     $q = $pdo->prepare(
-        "SELECT u.*, b.name AS branch_name, r.name AS role_name
+        "SELECT u.id, u.branch_id, u.is_active, b.name AS branch_name, r.name AS role_name
          FROM users u
          JOIN branches b ON b.id = u.branch_id
          JOIN roles    r ON r.id = u.role_id
@@ -30,23 +32,39 @@ if (empty($_SESSION['user_id'])) {
         echo json_encode(['error' => 'Invalid token']);
         exit;
     }
-    // Regenerate session to prevent session fixation
-    session_regenerate_id(true);
-    $_SESSION['user_id']   = $tokenUser['id'];
-    $_SESSION['branch_id'] = $tokenUser['branch_id'];
-    $_SESSION['role']      = $tokenUser['role_name'];
-    $_SESSION['branch']    = $tokenUser['branch_name'];
 }
 
-$user      = current_user();
-$branch_id = $user['branch_id'];
-$pdo       = db();
-$today     = date('Y-m-d');
-$scope     = $_GET['scope'] ?? 'branch';
+// Build $user from session or token payload — never write token data into $_SESSION.
+if ($tokenUser) {
+    $user = [
+        'id'        => $tokenUser['id'],
+        'name'      => '',
+        'role'      => $tokenUser['role_name'],
+        'branch_id' => $tokenUser['branch_id'],
+        'branch'    => $tokenUser['branch_name'],
+    ];
+} else {
+    $user = current_user();
+}
 
-update_presence();
+$branch_id  = $user['branch_id'];
+$userRole   = $user['role'];
+$isSup      = in_array($userRole, ['Admin', 'SUP']);
+$pdo        = db();
+$today      = date('Y-m-d');
+$scope      = $_GET['scope'] ?? 'branch';
 
-if ($scope === 'super' && can_see_all_branches()) {
+// Presence heartbeat (session-based only; token requests are stateless)
+if (empty($tokenUser)) {
+    update_presence();
+} else {
+    // Minimal stateless presence update using the token user's id
+    try {
+        $pdo->prepare("INSERT INTO user_presence (user_id,branch_id,last_seen) VALUES (?,?,NOW()) ON DUPLICATE KEY UPDATE last_seen=NOW(), branch_id=?")->execute([$user['id'], $branch_id, $branch_id]);
+    } catch (\Throwable $e) { /* ignore */ }
+}
+
+if ($scope === 'super' && $isSup) {
     // Supervisor strip — all branches
     $data     = [];
     $branches = $pdo->query("SELECT * FROM branches WHERE is_active=1 ORDER BY id")->fetchAll();

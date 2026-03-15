@@ -7,7 +7,10 @@ require_auth();
 $user = current_user();
 $pdo  = db();
 $today = date('Y-m-d');
-$branch_id = $user['branch_id'];
+// SUP/Admin can view any branch's handovers via ?branch= parameter
+$branch_id = can_see_all_branches() && !empty($_GET['branch'])
+    ? (int)$_GET['branch']
+    : (int)$user['branch_id'];
 
 $errors = []; $success = '';
 
